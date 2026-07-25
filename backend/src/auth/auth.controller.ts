@@ -22,8 +22,9 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
-
+  // Limitation du nombre de requêtes pour éviter les abus (5 requêtes par minute - par éxemple)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
+  // Route pour l'inscription d'un nouvel utilisateur
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Inscription d’un nouvel utilisateur' })
@@ -35,6 +36,7 @@ export class AuthController {
   }
 
   @Throttle({ default: { limit: 5, ttl: 60000 } })
+  // Route pour la connexion d'un utilisateur existant
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Connexion utilisateur et récupération du token' })
@@ -43,7 +45,7 @@ export class AuthController {
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
-
+  // Route protégée pour obtenir le profil de l'utilisateur connecté: ceci necessite un token JWT valide dans l'en-tête Authorization(et on remarquera qu'on doit d'abord récupérer le token via swagger UI ou via la route /login)
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   @HttpCode(HttpStatus.OK)
@@ -57,6 +59,7 @@ export class AuthController {
       user: req.user,
     };
   }
+  // Route pour récupérer le token CSRF global (utile pour les formulaires côté client, et assure la protection contre les attaques CSRF)
   @Get('csrf-token')
   @ApiOperation({ summary: 'Récupérer le token CSRF global' })
   getCsrfToken(@Req() req: any, @Res() res: express.Response) {

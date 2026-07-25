@@ -17,9 +17,9 @@ export class EmployeService {
     if (existing) {
       throw new ConflictException('Cet email est déjà utilisé.');
     }
-
+    // Hachage du mot de passe
     const hashedPassword = await bcrypt.hash(createEmployeDto.password, 10);
-
+    //Le retour de la requete vers la base de données sans le mot de passe
     return this.prisma.employe.create({
       data: {
         ...createEmployeDto,
@@ -76,7 +76,7 @@ export class EmployeService {
     return result;
   }
 
-  // 4. FIND BY EMAIL (Usage interne pour l'Auth)
+  // 4. FIND BY EMAIL (Usage interne pour l'Auth) - Indispensable
   async findByEmail(email: string) {
     return this.prisma.employe.findUnique({
       where: { email },

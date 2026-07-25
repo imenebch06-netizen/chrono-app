@@ -43,3 +43,5 @@ ALTER TABLE `Employe` ADD CONSTRAINT `Employe_serviceId_fkey` FOREIGN KEY (`serv
 
 -- AddForeignKey
 ALTER TABLE `Employe` ADD CONSTRAINT `Employe_managerId_fkey` FOREIGN KEY (`managerId`) REFERENCES `Employe`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- Cette structure de base réspecte le contenue du diagramme des classes --

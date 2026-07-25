@@ -10,3 +10,4 @@ export const CloudinaryProvider = {
     });
   },
 };
+//les variables d'environnement doivent etre dans le fichier .env

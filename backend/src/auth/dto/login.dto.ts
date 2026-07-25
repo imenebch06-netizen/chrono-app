@@ -1,5 +1,6 @@
 import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+//Module de connexion grace au saisie d'email et du mdp
 
 export class LoginDto {
   @ApiProperty({ example: 'karim.benali@example.com', description: 'Email de connexion' })

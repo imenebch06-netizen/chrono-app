@@ -14,13 +14,12 @@ async function bootstrap() {
   // 2. Cookie Parser (Indispensable pour lire le cookie CSRF)
   app.use(cookieParser('CLE_SECRETE_COOKIE_SUPER_SECURISEE'));
 
-  // 3. Configuration CSRF
+  // 3. Configuration CSRF: En effet, je l'ai commenté pour l'instant car il pose des problèmes avec Swagger durant le test des Endpoints
   /* const { doubleCsrfProtection } = doubleCsrf({
+    // Méthode pour obtenir le secret CSRF
     getSecret: () => 'CLE_SECRETE_CSRF_SUPER_SECURISEE',
-    // Required: provide a session identifier to associate CSRF secrets with a session/user
+    // Méthode pour obtenir l'identifiant de session à partir de la requête
     getSessionIdentifier: (req) => {
-      // Prefer an explicit session cookie, then header, then fallback to IP
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const anyReq: any = req;
       if (anyReq.cookies && anyReq.cookies.sessionId) return String(anyReq.cookies.sessionId);
       if (anyReq.headers && (anyReq.headers['x-session-id'] || anyReq.headers['x-sessionid'])) {
@@ -32,10 +31,10 @@ async function bootstrap() {
     cookieOptions: {
       httpOnly: true,
       sameSite: 'lax',
-      secure: false, // Passer à true en production
+      secure: false, // Mettre à true en production avec HTTPS
     },
     size: 64,
-    ignoredMethods: ['GET', 'HEAD', 'OPTIONS'], // Laisse passer les requêtes GET sans token
+    ignoredMethods: ['GET', 'HEAD', 'OPTIONS'], 
   });
 
   // 4. Application globale du middleware CSRF
@@ -51,7 +50,7 @@ async function bootstrap() {
     }),
   );
 
-  // 6. Configuration Swagger (Ton code d'origine)
+  // 6. Configuration Swagger
   const config = new DocumentBuilder()
     .setTitle('API Test Cloudinary')
     .setDescription('Test d upload d images')

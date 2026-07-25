@@ -12,7 +12,7 @@ import { UploadService } from './upload.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Multer } from 'multer';
 
-@ApiTags('Upload Images') // 👈 Titre propre dans Swagger
+@ApiTags('Upload Images') //  Titre propre dans Swagger
 @Controller('upload')
 export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
@@ -33,8 +33,9 @@ export class UploadController {
       },
     },
   })
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file'))//Interceptor pour gérer le fichier téléversé
   async uploadImage(@UploadedFile() file: Express.Multer.File) {
+    //Utiliser la méthode `uploadImage` de `UploadService` pour téléverser le fichier vers Cloudinary
     if (!file) {
       throw new BadRequestException('Aucun fichier fourni');
     }
