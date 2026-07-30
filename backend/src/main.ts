@@ -53,7 +53,7 @@ async function bootstrap() {
   // 6. Configuration Swagger
   const config = new DocumentBuilder()
     .setTitle('API Test Cloudinary')
-    .setDescription('Test d upload d images')
+    .setDescription('Tester les differents modules de l\'API')
     .setVersion('1.0')
     .addBearerAuth() // Pour autoriser le jeton JWT dans Swagger
     .addApiKey({ type: 'apiKey', name: 'x-csrf-token', in: 'header' }, 'CSRF-Token') // Permet d'injecter le token CSRF dans Swagger si besoin !

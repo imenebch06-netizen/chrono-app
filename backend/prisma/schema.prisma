@@ -60,4 +60,44 @@ model Employe {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  demandesAbsence DemandeAbsence[]
+}
+// Enums
+enum StatutDemande {
+  EN_ATTENTE
+  VALIDE
+  REFUSE
+}
+
+enum TypeDemande {
+  CONGE
+  ABSENCE
+  RECUPERATION
+}
+
+// Modèle DemandeAbsence (Contient la classe mère + les sous-classes)
+model DemandeAbsence {
+  id                 Int           @id @default(autoincrement())
+  typeDemande        TypeDemande
+  dateDebut          DateTime
+  dateFin            DateTime
+  status             StatutDemande @default(EN_ATTENTE)
+  motif              String
+  justificatif       String?
+
+  // Champ spécifique à Conge
+  type_conge         String?
+
+  // Champ spécifique à Absence
+  justifie           Boolean?      @default(false)
+
+  // Champ spécifique à Recuperation
+  heures_a_recuperer Float?
+
+  // Relation avec Employe
+  employeId          Int
+  employe            Employe       @relation(fields: [employeId], references: [id], onDelete: Cascade)
+
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
 }

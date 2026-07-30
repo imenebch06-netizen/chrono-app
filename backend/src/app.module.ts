@@ -7,6 +7,9 @@ import { PrismaModule } from './prisma/prisma.module';
 import { EmployeModule } from './employe/employe.module';
 import { AuthModule } from './auth/auth.module';
 import { UploadModule } from './upload/upload.module';
+import { ServicesModule } from './service/service.module';
+import { DirectionsModule } from './direction/direction.module';
+import { DemandeAbsenceModule } from './demande-absence/demande-absence.module';
 
 @Module({
   imports: [
@@ -16,6 +19,9 @@ import { UploadModule } from './upload/upload.module';
     EmployeModule,
     AuthModule,
     UploadModule,
+    ServicesModule,
+    DirectionsModule,
+    DemandeAbsenceModule,
   ],
   controllers: [AppController],
   providers: [AppService],
