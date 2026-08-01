@@ -10,6 +10,12 @@ import { UploadModule } from './upload/upload.module';
 import { ServicesModule } from './service/service.module';
 import { DirectionsModule } from './direction/direction.module';
 import { DemandeAbsenceModule } from './demande-absence/demande-absence.module';
+import { PlanningController } from './planning/planning.controller';
+import { PlanningService } from './planning/planning.service';
+import { PlanningModule } from './planning/planning.module';
+import { PointageModule } from './pointage/pointage.module';
+import { CompteurModule } from './compteur/compteur.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -22,8 +28,12 @@ import { DemandeAbsenceModule } from './demande-absence/demande-absence.module';
     ServicesModule,
     DirectionsModule,
     DemandeAbsenceModule,
+    PlanningModule,
+    PointageModule,
+    CompteurModule,
+    ScheduleModule.forRoot(),
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController, PlanningController],
+  providers: [AppService, PlanningService],
 })
 export class AppModule {}

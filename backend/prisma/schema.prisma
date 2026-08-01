@@ -58,6 +58,11 @@ model Employe {
   manager     Employe?  @relation("Supervision", fields: [managerId], references: [id])
   subordonnes Employe[] @relation("Supervision")
 
+  compteur        Compteur?         // Relation 1-to-1 (Tableau de bord de solde global)
+  plannings       Planning[]        // Relation 1-to-N (Planning de travail / Shifts)
+  pointages       Pointage[]        // Relation 1-to-N (Pointages quotidiens)
+
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   demandesAbsence DemandeAbsence[]
@@ -100,4 +105,47 @@ model DemandeAbsence {
 
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
+}
+
+model Planning {
+  id           Int      @id @default(autoincrement())
+  dateDebut    DateTime 
+  dateFin      DateTime 
+  heureDebut   String   
+  heureFin     String   
+  type_travail String   @default("NORMAL") 
+  joursRepos   String    @default("5,6")
+  employeId    Int
+  employe      Employe  @relation(fields: [employeId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+}
+
+// ⏱️ Modèle Pointage : Enregistre l'arrivée, le départ et l'écart du jour
+model Pointage {
+  id           Int      @id @default(autoincrement())
+  date         DateTime // Jour du pointage (YYYY-MM-DD)
+  heureDebut   DateTime // Horodatage précis d'arrivée
+  heureFin     DateTime?// Horodatage précis de départ (optionnel au moment de l'arrivée)
+  dureeHeures  Float?   // Total des heures travaillées dans la journée (ex: 8.5)
+  creditDebit  Float?   // Écart de la journée (ex: +0.5 ou -1.0)
+
+  employeId    Int
+  employe      Employe  @relation(fields: [employeId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+
+  // 🛡️ EMPÊCHE PHYSIQUEMENT LES DOUBLONS SUR (employeId + date)
+  @@unique([employeId, date])
+}
+
+// 📊 Modèle Compteur : Stocke les soldes cumulés globaux de l'employé
+model Compteur {
+  id           Int     @id @default(autoincrement())
+  solde_conges Float   @default(25.0) // Solde de jours de congés payés restant
+  solde_rtt    Float   @default(0.0)  // Solde en heures RTT
+  credit_debit Float   @default(0.0)  // Balance globale cumulée (+ heure sup / - absence)
+
+  employeId    Int     @unique
+  employe      Employe @relation(fields: [employeId], references: [id], onDelete: Cascade)
 }

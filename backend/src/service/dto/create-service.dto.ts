@@ -12,7 +12,7 @@ export class CreateServiceDto {
 
   @ApiProperty({
     example: 1,
-    description: "Identifiant de la direction à laquelle appartient le service",
+    description: 'Identifiant de la direction à laquelle appartient le service',
   })
   @IsInt()
   @IsNotEmpty()

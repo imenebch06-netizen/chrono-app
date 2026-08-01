@@ -67,4 +67,3 @@ export class AuthController {
     return res.json({ csrfToken });
   }
 }
-  

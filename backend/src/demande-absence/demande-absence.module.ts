@@ -6,7 +6,7 @@ import { UploadModule } from '../upload/upload.module'; // 👈 Vérifie le chem
 
 @Module({
   imports: [
-    PrismaModule, 
+    PrismaModule,
     UploadModule, // 👈 OBLIGATOIRE : permet à DemandeAbsence d'utiliser UploadService
   ],
   controllers: [DemandeAbsenceController],

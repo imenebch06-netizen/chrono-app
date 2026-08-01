@@ -19,7 +19,7 @@ export class AuthService {
     if (existingEmploye) {
       throw new ConflictException('Cet email est déjà utilisé');
     }
-    //Création d'un utilisateur employe grace au DTO 
+    //Création d'un utilisateur employe grace au DTO
     const employe = await this.employeService.create(registerDto);
     //Géneration du token
     const token = this.generateToken(employe.id, employe.email);

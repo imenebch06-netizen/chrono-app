@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 //Lancer une connexion à la base de données Prisma au démarrage du module et la fermer à la destruction du module.
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+  [x: string]: any;
   //La méthode onModuleInit est appelée lorsque le module est initialisé, et elle appelle la méthode $connect() de PrismaClient pour établir une connexion à la base de données.
   async onModuleInit() {
     await this.$connect();

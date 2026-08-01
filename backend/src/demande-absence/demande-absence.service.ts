@@ -25,7 +25,9 @@ export class DemandeAbsenceService {
       throw new BadRequestException("Le champ 'type_conge' est requis pour un CONGE.");
     }
     if (dto.typeDemande === TypeDemande.RECUPERATION && dto.heures_a_recuperer === undefined) {
-      throw new BadRequestException("Le champ 'heures_a_recuperer' est requis pour une RECUPERATION.");
+      throw new BadRequestException(
+        "Le champ 'heures_a_recuperer' est requis pour une RECUPERATION.",
+      );
     }
 
     // 3. Téléversement vers Cloudinary si un fichier est fourni

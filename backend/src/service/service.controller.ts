@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  ParseIntPipe,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { ServicesService } from './service.service';
 import { CreateServiceDto } from './dto/create-service.dto';
@@ -21,7 +12,7 @@ export class ServicesController {
   @Post()
   @ApiOperation({ summary: 'Créer un nouveau service' })
   @ApiResponse({ status: 201, description: 'Le service a été créé avec succès.' })
-  @ApiResponse({ status: 400, description: 'Données d\'entrée invalides.' })
+  @ApiResponse({ status: 400, description: "Données d'entrée invalides." })
   @ApiResponse({ status: 404, description: 'Direction associée non trouvée.' })
   create(@Body() createServiceDto: CreateServiceDto) {
     return this.servicesService.create(createServiceDto);
@@ -48,10 +39,7 @@ export class ServicesController {
   @ApiParam({ name: 'id', description: 'ID du service à modifier', example: 1 })
   @ApiResponse({ status: 200, description: 'Service mis à jour avec succès.' })
   @ApiResponse({ status: 404, description: 'Service ou Direction non trouvé.' })
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateServiceDto: UpdateServiceDto,
-  ) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateServiceDto: UpdateServiceDto) {
     return this.servicesService.update(id, updateServiceDto);
   }
 

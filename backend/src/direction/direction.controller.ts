@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  ParseIntPipe,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { DirectionsService } from './direction.service';
 import { CreateDirectionDto } from './dto/create-direction.dto';
@@ -21,7 +12,7 @@ export class DirectionsController {
   @Post()
   @ApiOperation({ summary: 'Créer une nouvelle direction' })
   @ApiResponse({ status: 201, description: 'La direction a été créée avec succès.' })
-  @ApiResponse({ status: 400, description: 'Données d\'entrée invalides.' })
+  @ApiResponse({ status: 400, description: "Données d'entrée invalides." })
   create(@Body() createDirectionDto: CreateDirectionDto) {
     return this.directionsService.create(createDirectionDto);
   }
@@ -47,10 +38,7 @@ export class DirectionsController {
   @ApiParam({ name: 'id', description: 'ID de la direction à modifier', example: 1 })
   @ApiResponse({ status: 200, description: 'Direction mise à jour avec succès.' })
   @ApiResponse({ status: 404, description: 'Direction introuvable.' })
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateDirectionDto: UpdateDirectionDto,
-  ) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateDirectionDto: UpdateDirectionDto) {
     return this.directionsService.update(id, updateDirectionDto);
   }
 

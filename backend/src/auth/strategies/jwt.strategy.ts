@@ -7,7 +7,7 @@ import { EmployeService } from 'src/employe/employe.service';
 
 // 1. Déclaration du Payload directement ici: son interface définit la structure des données contenues dans le JWT
 export interface JwtPayload {
-  sub: number;// L'identifiant de l'utilisateur (employé) dans la base de données
+  sub: number; // L'identifiant de l'utilisateur (employé) dans la base de données
   email: string;
   role: string;
 }

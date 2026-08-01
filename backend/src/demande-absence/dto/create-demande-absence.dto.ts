@@ -9,7 +9,7 @@ import {
   IsBoolean,
   IsNumber,
 } from 'class-validator';
-import {Transform, Type} from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 export enum StatutDemande {
   EN_ATTENTE = 'EN_ATTENTE',
   VALIDE = 'VALIDE',
@@ -73,7 +73,7 @@ export class CreateDemandeAbsenceDto {
   @IsBoolean({ message: 'justifie doit être un booléen (true ou false)' })
   justifie?: boolean;
 
- @ApiPropertyOptional({ example: 7.5, type: Number })
+  @ApiPropertyOptional({ example: 7.5, type: Number })
   @IsOptional()
   @Transform(({ value }) => {
     if (value === '' || value === null || value === undefined) return undefined;

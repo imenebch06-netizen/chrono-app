@@ -1,4 +1,3 @@
-
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import { Readable } from 'stream';
@@ -25,7 +24,7 @@ export class UploadService {
             return reject(new BadRequestException(`Erreur Cloudinary: ${error.message}`));
           }
           if (!result) {
-            return reject(new BadRequestException('Erreur Cloudinary: résultat vide')); 
+            return reject(new BadRequestException('Erreur Cloudinary: résultat vide'));
           }
           resolve(result);
         },

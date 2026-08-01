@@ -9,18 +9,21 @@ import {
   ParseIntPipe,
   UseInterceptors,
   UploadedFile,
-  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiConsumes,
+  ApiBearerAuth,
+  ApiParam,
+} from '@nestjs/swagger';
 import { DemandeAbsenceService } from './demande-absence.service';
 import { CreateDemandeAbsenceDto } from './dto/create-demande-absence.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags("Demandes d'Absence")
-@UseGuards(JwtAuthGuard) // 🔒 Sécurité JWT sur tout le contrôleur
-@ApiBearerAuth()
 @Controller('demandes-absence')
 export class DemandeAbsenceController {
   constructor(private readonly service: DemandeAbsenceService) {}
@@ -45,24 +48,21 @@ export class DemandeAbsenceController {
   }
 
   @Get('employe/:employeId')
-  @ApiOperation({ summary: 'Obtenir les demandes d\'un employé spécifique' })
+  @ApiOperation({ summary: "Obtenir les demandes d'un employé spécifique" })
   @ApiParam({ name: 'employeId', example: 1 })
   findByEmploye(@Param('employeId', ParseIntPipe) employeId: number) {
     return this.service.findByEmploye(employeId);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Obtenir les détails d\'une demande' })
+  @ApiOperation({ summary: "Obtenir les détails d'une demande" })
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.service.findOne(id);
   }
 
   @Patch(':id/status')
   @ApiOperation({ summary: 'Changer le statut (VALIDE / REFUSE)' })
-  updateStatus(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateStatusDto,
-  ) {
+  updateStatus(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateStatusDto) {
     return this.service.updateStatus(id, dto);
   }
 
