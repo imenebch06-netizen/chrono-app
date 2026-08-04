@@ -16,6 +16,9 @@ import { PlanningModule } from './planning/planning.module';
 import { PointageModule } from './pointage/pointage.module';
 import { CompteurModule } from './compteur/compteur.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { AdminService } from './admin/admin.service';
+import { AdminController } from './admin/admin.controller';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -32,8 +35,9 @@ import { ScheduleModule } from '@nestjs/schedule';
     PointageModule,
     CompteurModule,
     ScheduleModule.forRoot(),
+    AdminModule,
   ],
-  controllers: [AppController, PlanningController],
-  providers: [AppService, PlanningService],
+  controllers: [AppController, PlanningController, AdminController],
+  providers: [AppService, PlanningService, AdminService],
 })
 export class AppModule {}

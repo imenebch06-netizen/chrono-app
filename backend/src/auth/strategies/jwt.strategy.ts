@@ -26,6 +26,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   // 3. La méthode validate() qui est appelée automatiquement par Passport après la vérification du token JWT. Elle reçoit le payload décodé du token et doit retourner les informations de l'utilisateur (employé) correspondant.
   async validate(payload: JwtPayload) {
+    const userId = Number(payload.sub);
     // Les données retournées ici seront injectées automatiquement dans req.user
     const user = await this.employeService.findOne(payload.sub);
     if (!user) {

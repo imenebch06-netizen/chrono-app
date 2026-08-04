@@ -1,0 +1,63 @@
+{"planning": [
+{
+  "employeId": 24,
+  "dateDebut": "2026-08-01T00:00:00.000Z",
+  "dateFin": "2026-08-31T23:59:59.000Z",
+  "type_travail": "NORMAL",
+  "heureDebut": "08:00",
+  "heureFin": "16:00",
+  "joursRepos": [5, 6]
+},
+
+{
+  "employeId": 24,
+  "dateDebut": "2026-08-01T00:00:00.000Z",
+  "dateFin": "2026-08-07T23:59:59.000Z",
+  "type_travail": "SHIFT_3X8",
+  "typeShift": "MATIN",
+  "heureDebut": "06:00",
+  "heureFin": "14:00",
+  "joursRepos": [5, 6]
+},
+ {
+  "employeId": 24,
+  "dateDebut": "2026-08-08T00:00:00.000Z",
+  "dateFin": "2026-08-14T23:59:59.000Z",
+  "type_travail": "SHIFT_3X8",
+  "typeShift": "SOIR",
+  "heureDebut": "14:00",
+  "heureFin": "22:00",
+  "joursRepos": [5, 6]
+},
+{
+  "employeId": 24,
+  "dateDebut": "2026-08-15T00:00:00.000Z",
+  "dateFin": "2026-08-21T23:59:59.000Z",
+  "type_travail": "SHIFT_3X8",
+  "typeShift": "NUIT",
+  "heureDebut": "22:00",
+  "heureFin": "06:00",
+  "joursRepos": [5, 6]
+},
+
+{
+  "employeId": 24,
+  "dateDebut": "2026-08-01T00:00:00.000Z",
+  "dateFin": "2026-08-31T23:59:59.000Z",
+  "type_travail": "FLEXIBLE",
+  "heureDebut": "08:00",
+  "heureFin": "16:00",
+  "plageFixeDebut": "09:30",
+  "plageFixeFin": "15:30",
+  "joursRepos": [5, 6]
+},
+{
+  "employeId": 24,
+  "dateDebut": "2026-08-01T00:00:00.000Z",
+  "dateFin": "2026-08-15T23:59:59.000Z",
+  "type_travail": "REPOS",
+  "joursRepos": [0, 1, 2, 3, 4, 5, 6]
+}
+]
+
+}

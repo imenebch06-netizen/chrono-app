@@ -27,15 +27,22 @@ enum Statut {
 model Direction {
   id            Int       @id @default(autoincrement())
   nom_direction String
+  // 🔑 Un manager optionnel responsable de TOUTE la direction
+  managerId   Int?      @unique
+  manager     Employe?  @relation("DirectionManager", fields: [managerId], references: [id])
   services      Service[]
   createdAt     DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Service {
   id          Int       @id @default(autoincrement())
   nom_service String
   directionId Int
-  direction   Direction @relation(fields: [directionId], references: [id])
+  direction   Direction @relation(fields: [directionId], references: [id],onDelete: Cascade)
+  // 🔑 Un manager optionnel responsable de ce service spécifique
+  managerId   Int?
+  manager     Employe?  @relation("ServiceManager", fields: [managerId], references: [id])
   employes    Employe[]
   createdAt   DateTime  @default(now())
 }
@@ -57,6 +64,9 @@ model Employe {
   managerId   Int?
   manager     Employe?  @relation("Supervision", fields: [managerId], references: [id])
   subordonnes Employe[] @relation("Supervision")
+
+  directionGeree Direction? @relation("DirectionManager")
+  servicesGeres  Service[]  @relation("ServiceManager")
 
   compteur        Compteur?         // Relation 1-to-1 (Tableau de bord de solde global)
   plannings       Planning[]        // Relation 1-to-N (Planning de travail / Shifts)
@@ -108,19 +118,20 @@ model DemandeAbsence {
 }
 
 model Planning {
-  id           Int      @id @default(autoincrement())
-  dateDebut    DateTime 
-  dateFin      DateTime 
-  heureDebut   String   
-  heureFin     String   
-  type_travail String   @default("NORMAL") 
-  joursRepos   String    @default("5,6")
-  employeId    Int
-  employe      Employe  @relation(fields: [employeId], references: [id], onDelete: Cascade)
-
-  createdAt    DateTime @default(now())
+  id              Int      @id @default(autoincrement())
+  employeId       Int
+  employe         Employe  @relation(fields: [employeId], references: [id])
+  dateDebut       DateTime
+  dateFin         DateTime
+  heureDebut      String?  // Ex: "06:00" ou "08:00"
+  heureFin        String?  // Ex: "14:00" ou "16:00"
+  type_travail    String   // "NORMAL", "SHIFT_3X8", "FLEXIBLE", "REPOS"
+  typeShift       String?  // "MATIN", "SOIR", "NUIT"
+  plageFixeDebut  String?  // "09:30"
+  plageFixeFin    String?  // "15:30"
+  joursRepos      String?  // "5,6"
+  createdAt       DateTime @default(now())
 }
-
 // ⏱️ Modèle Pointage : Enregistre l'arrivée, le départ et l'écart du jour
 model Pointage {
   id           Int      @id @default(autoincrement())

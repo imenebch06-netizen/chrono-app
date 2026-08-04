@@ -3,41 +3,62 @@ import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { CreateEmployeDto } from './dto/create-employe.dto';
 import { UpdateEmployeDto } from './dto/update-employe.dto';
+import { Role } from 'src/auth/enums/role.enum';
 
 @Injectable()
 export class EmployeService {
   constructor(private readonly prisma: PrismaService) {}
 
   // 1. CREATE
-  async create(createEmployeDto: CreateEmployeDto) {
-    const existing = await this.prisma.employe.findUnique({
-      where: { email: createEmployeDto.email },
+ async create(createEmployeDto: CreateEmployeDto) {
+  // 1. Vérification de l'unicité de l'email
+  const existing = await this.prisma.employe.findUnique({
+    where: { email: createEmployeDto.email },
+  });
+
+  if (existing) {
+    throw new ConflictException('Cet email est déjà utilisé.');
+  }
+
+  // 2. 🎯 Recherche automatique du Manager du service si managerId est absent
+  let finalManagerId = createEmployeDto.managerId;
+
+  if (!finalManagerId && createEmployeDto.serviceId) {
+    const managerDuService = await this.prisma.employe.findFirst({
+      where: {
+        serviceId: createEmployeDto.serviceId,
+        role: 'MANAGER', // On cherche le manager du service
+      },
     });
 
-    if (existing) {
-      throw new ConflictException('Cet email est déjà utilisé.');
+    if (managerDuService) {
+      finalManagerId = managerDuService.id;
     }
-    // Hachage du mot de passe
-    const hashedPassword = await bcrypt.hash(createEmployeDto.password, 10);
-    //Le retour de la requete vers la base de données sans le mot de passe
-    return this.prisma.employe.create({
-      data: {
-        ...createEmployeDto,
-        password: hashedPassword,
-      },
-      select: {
-        id: true,
-        nom: true,
-        prenom: true,
-        email: true,
-        role: true,
-        adress: true,
-        serviceId: true,
-        managerId: true,
-        createdAt: true,
-      },
-    });
   }
+
+  // 3. Hachage du mot de passe
+  const hashedPassword = await bcrypt.hash(createEmployeDto.password, 10);
+
+  // 4. Création en base de données avec le managerId résolu
+  return this.prisma.employe.create({
+    data: {
+      ...createEmployeDto,
+      password: hashedPassword,
+      managerId: finalManagerId, // 👈 Affectation automatique de l'ID du manager
+    },
+    select: {
+      id: true,
+      nom: true,
+      prenom: true,
+      email: true,
+      role: true,
+      adress: true,
+      serviceId: true,
+      managerId: true,
+      createdAt: true,
+    },
+  });
+}
 
   // 2. READ ALL
   async findAll() {
@@ -116,4 +137,63 @@ export class EmployeService {
 
     return { message: `L'employé avec l'ID ${id} a été supprimé avec succès.` };
   }
+
+  async findByService(serviceId: number) {
+    return this.prisma.employe.findMany({
+      where: {
+        serviceId: serviceId,
+      },
+      select: {
+        id: true,
+        nom: true,
+        prenom: true,
+        email: true,
+        role: true,
+        serviceId: true,
+        // Tu peux sélectionner uniquement les champs nécessaires pour le front
+      },
+    });
+  }
+
+  async findEquipeDuManager(managerId: number, serviceId?: number) {
+  return this.prisma.employe.findMany({
+    where: {
+      OR: [
+        { managerId: managerId }, // Tous les subordonnés directs
+        { serviceId: serviceId && serviceId > 0 ? serviceId : undefined }, // Tous les membres du même service
+      ],
+    },
+    select: {
+      id: true,
+      nom: true,
+      prenom: true,
+      email: true,
+      role: true,
+      managerId: true,
+      service: {
+        select: { id: true, nom_service: true },
+      },
+    },
+    orderBy: { nom: 'asc' },
+  });
+}
+// Récupère uniquement les Managers qui ne gèrent ENCORE AUCUNE Direction
+async findAvailableDirectionManagers() {
+  return this.prisma.employe.findMany({
+    where: {
+      role: Role.MANAGER,
+      directionGeree: null, // 🔑 Aucun raccordement à une direction pour l'instant
+    },
+    select: {
+      id: true,
+      nom: true,
+      prenom: true,
+      email: true,
+      service: { select: { nom_service: true } },
+    },
+    orderBy: { nom: 'asc' },
+  });
+}
+
+
 }
