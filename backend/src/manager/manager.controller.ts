@@ -62,10 +62,12 @@ export class ManagerController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.MANAGER, Role.ADMIN)
   @ApiOperation({ summary: "Obtenir la liste des employés du service et des sous-services si direction" })
-  async getEmployes(@Param('managerId', ParseIntPipe) managerId: number) {
-    return this.employeService.findEquipeDuManager(managerId);
+  async getEmployes(@Param('managerId', ParseIntPipe) managerId: number, @Req() req: any,
+@Body() body: any) {
+    const currentManagerId = req.user.id;
+    return this.employeService.findEquipeDuManager(currentManagerId);
   }
-
+  
   // 4️⃣ Créer ou ajuster les plannings d'un ou plusieurs employés du service
   @Post(':managerId/plannings')
   @UseGuards(JwtAuthGuard, RolesGuard)

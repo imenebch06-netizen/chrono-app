@@ -9,38 +9,54 @@ export class ServicesService {
 
   // CRÉATION
   async create(createServiceDto: CreateServiceDto) {
-    // A. Vérification de l'existence de la direction
-    const direction = await this.prisma.direction.findUnique({
-      where: { id: createServiceDto.directionId },
-    });
+  // A. Vérification de l'existence de la direction
+  const direction = await this.prisma.direction.findUnique({
+    where: { id: createServiceDto.directionId },
+  });
 
-    if (!direction) {
-      throw new NotFoundException(
-        `La direction avec l'ID ${createServiceDto.directionId} n'existe pas.`,
-      );
-    }
-
-    // B. 🔑 Vérification : Le manager sélectionné gère-t-il DÉJÀ un autre service ?
-    if (createServiceDto.managerId) {
-      const isAlreadyManagingService = await this.prisma.service.findFirst({
-        where: { managerId: createServiceDto.managerId },
-      });
-
-      if (isAlreadyManagingService) {
-        throw new BadRequestException('Ce manager supervise déjà un autre service.');
-      }
-    }
-
-    return this.prisma.service.create({
-      data: createServiceDto,
-      include: {
-        direction: true,
-        manager: {
-          select: { id: true, nom: true, prenom: true, email: true },
-        },
-      },
-    });
+  if (!direction) {
+    throw new NotFoundException(
+      `La direction avec l'ID ${createServiceDto.directionId} n'existe pas.`,
+    );
   }
+
+  // B. Vérification du manager
+  if (createServiceDto.managerId) {
+    const manager = await this.prisma.utilisateur.findUnique({
+      where: { id: createServiceDto.managerId },
+      select: { id: true, role: true },
+    });
+
+    if (!manager) {
+      throw new NotFoundException("Manager introuvable.");
+    }
+
+    if (manager.role !== 'MANAGER') {
+      throw new BadRequestException("L'utilisateur fourni n'est pas un manager.");
+    }
+
+    // C. Vérification : Le manager supervise-t-il déjà un autre service ?
+    const isAlreadyManagingService = await this.prisma.service.findFirst({
+      where: { managerId: createServiceDto.managerId },
+    });
+
+    if (isAlreadyManagingService) {
+      throw new BadRequestException("Ce manager supervise déjà un autre service.");
+    }
+  }
+
+  // D. Création du service
+  return this.prisma.service.create({
+    data: createServiceDto,
+    include: {
+      direction: true,
+      manager: {
+        select: { id: true, nom: true, prenom: true, email: true },
+      },
+    },
+  });
+}
+
 
   // LECTURE TOUS
   async findAll() {

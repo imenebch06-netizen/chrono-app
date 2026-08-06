@@ -9,26 +9,42 @@ export class DirectionsService {
 
   // 1. CRÉATION
   async create(createDirectionDto: CreateDirectionDto) {
-    // Si un managerId est fourni à la création, on vérifie qu'il n'est pas déjà pris
-    if (createDirectionDto.managerId) {
-      const isAlreadyManaging = await this.prisma.direction.findUnique({
-        where: { managerId: createDirectionDto.managerId },
-      });
+  if (createDirectionDto.managerId) {
+    // 1️⃣ Vérifier que ce manager existe et qu'il a bien le rôle MANAGER
+    const manager = await this.prisma.utilisateur.findUnique({
+      where: { id: createDirectionDto.managerId },
+      select: { id: true, role: true },
+    });
 
-      if (isAlreadyManaging) {
-        throw new BadRequestException('Ce manager supervise déjà une autre direction.');
-      }
+    if (!manager) {
+      throw new NotFoundException("Manager introuvable.");
     }
 
-    return this.prisma.direction.create({
-      data: createDirectionDto,
-      include: {
-        manager: {
-          select: { id: true, nom: true, prenom: true, email: true },
-        },
-      },
+    if (manager.role !== 'MANAGER') {
+      throw new BadRequestException("L'utilisateur fourni n'est pas un manager.");
+    }
+
+    // 2️⃣ Vérifier qu'il ne supervise pas déjà une autre direction
+    const isAlreadyManaging = await this.prisma.direction.findUnique({
+      where: { managerId: createDirectionDto.managerId },
     });
+
+    if (isAlreadyManaging) {
+      throw new BadRequestException("Ce manager supervise déjà une autre direction.");
+    }
   }
+
+  // 3️⃣ Création de la direction
+  return this.prisma.direction.create({
+    data: createDirectionDto,
+    include: {
+      manager: {
+        select: { id: true, nom: true, prenom: true, email: true },
+      },
+    },
+  });
+}
+
 
   // 2. LECTURE DE TOUTES LES DIRECTIONS
   async findAll() {
