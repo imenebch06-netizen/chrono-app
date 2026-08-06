@@ -17,14 +17,12 @@ export class DemandeAbsenceService {
     private readonly uploadService: UploadService,
   ) {}
 
- async create(dto: CreateDemandeAbsenceDto, user: any, file?: Express.Multer.File) {
+  async create(dto: CreateDemandeAbsenceDto, user: any, file?: Express.Multer.File) {
     // 1. Récupération sécurisée de l'ID utilisateur (compatible `user.id` et `user.sub`)
     const currentUserId = user?.id ?? user?.sub;
 
     // 2. Détermination de l'employeId cible
-    const rawEmployeId = (user?.role === Role.ADMIN && dto.employeId) 
-      ? dto.employeId 
-      : currentUserId;
+    const rawEmployeId = user?.role === Role.ADMIN && dto.employeId ? dto.employeId : currentUserId;
 
     const targetEmployeId = Number(rawEmployeId);
 
@@ -49,7 +47,9 @@ export class DemandeAbsenceService {
       throw new BadRequestException("Le champ 'type_conge' est requis pour un CONGE.");
     }
     if (dto.typeDemande === TypeDemande.RECUPERATION && dto.heures_a_recuperer === undefined) {
-      throw new BadRequestException("Le champ 'heures_a_recuperer' est requis pour une RECUPERATION.");
+      throw new BadRequestException(
+        "Le champ 'heures_a_recuperer' est requis pour une RECUPERATION.",
+      );
     }
 
     // 6. Téléversement Cloudinary si un justificatif est fourni
@@ -110,7 +110,8 @@ export class DemandeAbsenceService {
 
     // 🔒 Contrôle d'accès :
     const isOwner = demande.employeId === user.id;
-    const isSameServiceManager = user.role === Role.MANAGER && demande.employe.serviceId === user.serviceId;
+    const isSameServiceManager =
+      user.role === Role.MANAGER && demande.employe.serviceId === user.serviceId;
     const isAdmin = user.role === Role.ADMIN;
 
     if (!isOwner && !isSameServiceManager && !isAdmin) {
@@ -121,82 +122,83 @@ export class DemandeAbsenceService {
   }
 
   async updateStatus(id: number, dto: UpdateStatusDto, user: any) {
-  // 1. Récupération de la demande avec l'employé concerné
-  const demande = await this.prisma.demandeAbsence.findUnique({
-    where: { id },
-    include: { employe: true },
-  });
-
-  if (!demande) {
-    throw new NotFoundException(`Demande #${id} introuvable.`);
-  }
-
-  // 🔒 2. CONTRÔLE DE SÉCURITÉ
-
-  // Interdiction de valider sa propre demande
-  if (demande.employeId === user.id) {
-    throw new ForbiddenException("Vous ne pouvez pas valider ou refuser votre propre demande.");
-  }
-
-  // Règles pour le rôle MANAGER
-  if (user.role === Role.MANAGER) {
-    
-    // CAS A : La demande appartient à un autre MANAGER (Validation entre pairs)
-    if (demande.employe.role === Role.MANAGER) {
-      // ✅ Autorisé
-    } 
-    // CAS B : La demande appartient à un EMPLOYE simple
-    else {
-      const isSubordonneDirect = demande.employe.managerId === user.id;
-      const isMemeService = demande.employe.serviceId === user.serviceId;
-
-      // Si l'employé n'est ni son subordonné direct, ni dans son service : BLOQUER
-      if (!isSubordonneDirect && !isMemeService) {
-        throw new ForbiddenException(
-          "Vous n'avez pas les droits sur cet employé (ni subordonné direct, ni membre de votre service)."
-        );
-      }
-    }
-  }
-
-  // 3. Déduction du solde dans Compteur si la demande passe à VALIDE
-  if (dto.status === 'VALIDE' && demande.status !== 'VALIDE') {
-    const compteur = await this.prisma.compteur.findFirst({
-      where: { employeId: demande.employeId },
+    // 1. Récupération de la demande avec l'employé concerné
+    const demande = await this.prisma.demandeAbsence.findUnique({
+      where: { id },
+      include: { employe: true },
     });
 
-    if (compteur) {
-      if (demande.typeDemande === TypeDemande.RECUPERATION) {
-        const heuresDeduites = demande.heures_a_recuperer || 0;
-        const nouveauSoldeRtt = Math.max(0, compteur.solde_rtt - heuresDeduites);
+    if (!demande) {
+      throw new NotFoundException(`Demande #${id} introuvable.`);
+    }
 
-        await this.prisma.compteur.update({
-          where: { id: compteur.id },
-          data: { solde_rtt: nouveauSoldeRtt },
-        });
+    // 🔒 2. CONTRÔLE DE SÉCURITÉ
 
-      } else if (demande.typeDemande === TypeDemande.ABSENCE || demande.typeDemande === TypeDemande.CONGE) {
-        const debut = new Date(demande.dateDebut);
-        const fin = new Date(demande.dateFin);
-        const diffMs = Math.abs(fin.getTime() - debut.getTime());
-        const nbJours = Math.ceil(diffMs / (1000 * 60 * 60 * 24)) || 1;
+    // Interdiction de valider sa propre demande
+    if (demande.employeId === user.id) {
+      throw new ForbiddenException('Vous ne pouvez pas valider ou refuser votre propre demande.');
+    }
 
-        const nouveauSoldeConges = Math.max(0, compteur.solde_conges - nbJours);
+    // Règles pour le rôle MANAGER
+    if (user.role === Role.MANAGER) {
+      // CAS A : La demande appartient à un autre MANAGER (Validation entre pairs)
+      if (demande.employe.role === Role.MANAGER) {
+        // ✅ Autorisé
+      }
+      // CAS B : La demande appartient à un EMPLOYE simple
+      else {
+        const isSubordonneDirect = demande.employe.managerId === user.id;
+        const isMemeService = demande.employe.serviceId === user.serviceId;
 
-        await this.prisma.compteur.update({
-          where: { id: compteur.id },
-          data: { solde_conges: nouveauSoldeConges },
-        });
+        // Si l'employé n'est ni son subordonné direct, ni dans son service : BLOQUER
+        if (!isSubordonneDirect && !isMemeService) {
+          throw new ForbiddenException(
+            "Vous n'avez pas les droits sur cet employé (ni subordonné direct, ni membre de votre service).",
+          );
+        }
       }
     }
-  }
 
-  // 4. Mise à jour du statut
-  return this.prisma.demandeAbsence.update({
-    where: { id },
-    data: { status: dto.status },
-  });
-}
+    // 3. Déduction du solde dans Compteur si la demande passe à VALIDE
+    if (dto.status === 'VALIDE' && demande.status !== 'VALIDE') {
+      const compteur = await this.prisma.compteur.findFirst({
+        where: { employeId: demande.employeId },
+      });
+
+      if (compteur) {
+        if (demande.typeDemande === TypeDemande.RECUPERATION) {
+          const heuresDeduites = demande.heures_a_recuperer || 0;
+          const nouveauSoldeRtt = Math.max(0, compteur.solde_rtt - heuresDeduites);
+
+          await this.prisma.compteur.update({
+            where: { id: compteur.id },
+            data: { solde_rtt: nouveauSoldeRtt },
+          });
+        } else if (
+          demande.typeDemande === TypeDemande.ABSENCE ||
+          demande.typeDemande === TypeDemande.CONGE
+        ) {
+          const debut = new Date(demande.dateDebut);
+          const fin = new Date(demande.dateFin);
+          const diffMs = Math.abs(fin.getTime() - debut.getTime());
+          const nbJours = Math.ceil(diffMs / (1000 * 60 * 60 * 24)) || 1;
+
+          const nouveauSoldeConges = Math.max(0, compteur.solde_conges - nbJours);
+
+          await this.prisma.compteur.update({
+            where: { id: compteur.id },
+            data: { solde_conges: nouveauSoldeConges },
+          });
+        }
+      }
+    }
+
+    // 4. Mise à jour du statut
+    return this.prisma.demandeAbsence.update({
+      where: { id },
+      data: { status: dto.status },
+    });
+  }
 
   async remove(id: number) {
     const demande = await this.prisma.demandeAbsence.findUnique({ where: { id } });
@@ -204,13 +206,37 @@ export class DemandeAbsenceService {
     return this.prisma.demandeAbsence.delete({ where: { id } });
   }
 
-  async findByService(serviceId: number) {
+ async findByService(serviceId: number) {
+    // 1. Vérifier si le service existe
+    const serviceExists = await this.prisma.service.findUnique({
+      where: { id: serviceId },
+    });
+
+    if (!serviceExists) {
+      throw new NotFoundException(`Le service avec l'ID ${serviceId} n'existe pas.`);
+    }
+
+    // 2. Récupérer les demandes des employés appartenant à ce service
     return this.prisma.demandeAbsence.findMany({
-      where: { employe: { serviceId } },
-      include: {
-        employe: { select: { id: true, nom: true, prenom: true } },
+      where: {
+        employe: {
+          serviceId: serviceId, // 🔑 Filtre Prisma à travers la relation Employe
+        },
       },
-      orderBy: { createdAt: 'desc' },
+      include: {
+        employe: {
+          select: {
+            id: true,
+            nom: true,
+            prenom: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc', // Affiche les demandes les plus récentes en premier
+      },
     });
   }
 
@@ -231,4 +257,78 @@ export class DemandeAbsenceService {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  async cancelOwnDemande(demandeId: number, employeId: number) {
+  const demande = await this.prisma.demandeAbsence.findUnique({
+    where: { id: demandeId },
+  });
+
+  if (!demande) {
+    throw new NotFoundException('Demande introuvable.');
+  }
+
+  // Sécurité : Vérifier que la demande appartient bien à cet employé
+  if (demande.employeId !== employeId) {
+    throw new ForbiddenException("Vous ne pouvez pas annuler la demande d'un autre employé.");
+  }
+
+  // Règle métier : Annulable UNIQUEMENT si encore EN_ATTENTE
+  if (demande.status !== 'EN_ATTENTE') {
+    throw new BadRequestException('Impossible d annuler une demande déjà traitée.');
+  }
+
+  return this.prisma.demandeAbsence.delete({
+    where: { id: demandeId },
+  });
+}
+
+async findPendingByService(serviceId: number, user: any) {
+  // 1. Vérifier si le service existe
+  const serviceExists = await this.prisma.service.findUnique({
+    where: { id: serviceId },
+  });
+  if (!serviceExists) {
+    throw new NotFoundException(`Le service avec l'ID ${serviceId} n'existe pas.`);
+  }
+
+  // 2. Récupérer uniquement les demandes EN_ATTENTE
+  const demandes = await this.prisma.demandeAbsence.findMany({
+    where: {
+      employe: {
+        serviceId: serviceId,
+      },
+      status: 'EN_ATTENTE', // 🔑 Filtrage strict
+    },
+    include: {
+      employe: {
+        select: {
+          id: true,
+          nom: true,
+          prenom: true,
+          email: true,
+          role: true,          
+          serviceId: true, 
+               },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  // 3. Contrôle d’accès : le manager ne peut traiter que
+  // - les demandes des employés de son service
+  // - les demandes des autres managers (pairs)
+  if (user.role === Role.MANAGER) {
+    return demandes.filter(
+      (d) =>
+        d.employe.serviceId === user.serviceId ||
+        d.employe.role === Role.MANAGER
+    );
+  }
+
+  // ✅ Si ADMIN, retour complet
+  return demandes;
+}
+
+
+
 }

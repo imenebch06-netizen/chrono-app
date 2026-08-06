@@ -5,5 +5,6 @@ import { PointageService } from './pointage.service';
 @Module({
   controllers: [PointageController],
   providers: [PointageService],
+  exports: [PointageService],
 })
 export class PointageModule {}

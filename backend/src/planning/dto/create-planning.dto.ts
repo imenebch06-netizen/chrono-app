@@ -10,11 +10,15 @@ import {
 } from 'class-validator';
 
 export class CreatePlanningDto {
+  @ApiProperty({ example: [1, 2, 3], description: "IDs des employés concernés" })
+  @IsArray()
+  @IsInt({ each: true })
+  @IsNotEmpty()
+  employeIds!: number[];
   @ApiProperty({ example: 1, description: "ID de l'employé concerné" })
   @IsInt()
-  @IsNotEmpty()
+  @IsOptional()
   employeId!: number;
-
   @ApiProperty({
     example: '2026-08-01T00:00:00.000Z',
     description: 'Début de la période de planning',

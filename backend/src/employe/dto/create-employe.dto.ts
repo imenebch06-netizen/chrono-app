@@ -47,7 +47,7 @@ export class CreateEmployeDto {
 
   @ApiPropertyOptional({ example: 1, description: 'ID du service rattaché' })
   @IsInt()
-  @IsOptional()
+  @IsNotEmpty()
   serviceId?: number;
 
   @ApiPropertyOptional({ example: 2, description: 'ID du manager hiérarchique' })

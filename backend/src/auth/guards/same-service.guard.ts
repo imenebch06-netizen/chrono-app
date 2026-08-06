@@ -23,6 +23,6 @@ export class SameServiceGuard implements CanActivate {
     }
 
     // 3. Les employés simples n'ont pas accès aux vues par service
-    throw new ForbiddenException("Accès refusé.");
+    throw new ForbiddenException('Accès refusé.');
   }
 }

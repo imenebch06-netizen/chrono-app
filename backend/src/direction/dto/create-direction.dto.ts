@@ -9,7 +9,7 @@ export class CreateDirectionDto {
   @IsString()
   @IsNotEmpty()
   nom_direction!: string;
-   @ApiProperty({
+  @ApiProperty({
     example: 1,
     description: 'ID du manager de la direction',
   })

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
@@ -9,7 +9,7 @@ export class ServicesService {
 
   // CRÉATION
   async create(createServiceDto: CreateServiceDto) {
-    // Vérification de l'existence de la direction
+    // A. Vérification de l'existence de la direction
     const direction = await this.prisma.direction.findUnique({
       where: { id: createServiceDto.directionId },
     });
@@ -20,9 +20,25 @@ export class ServicesService {
       );
     }
 
+    // B. 🔑 Vérification : Le manager sélectionné gère-t-il DÉJÀ un autre service ?
+    if (createServiceDto.managerId) {
+      const isAlreadyManagingService = await this.prisma.service.findFirst({
+        where: { managerId: createServiceDto.managerId },
+      });
+
+      if (isAlreadyManagingService) {
+        throw new BadRequestException('Ce manager supervise déjà un autre service.');
+      }
+    }
+
     return this.prisma.service.create({
       data: createServiceDto,
-      include: { direction: true },
+      include: {
+        direction: true,
+        manager: {
+          select: { id: true, nom: true, prenom: true, email: true },
+        },
+      },
     });
   }
 
@@ -42,6 +58,9 @@ export class ServicesService {
       where: { id },
       include: {
         direction: true,
+        manager: {
+          select: { id: true, nom: true, prenom: true, email: true },
+        },
         employes: {
           select: {
             id: true,
@@ -63,23 +82,32 @@ export class ServicesService {
 
   // MISE À JOUR
   async update(id: number, updateServiceDto: UpdateServiceDto) {
-    await this.findOne(id); // S'assure que le service existe
+    // S'assurer que le service existe
+    await this.findOne(id);
 
-    if (updateServiceDto.directionId) {
-      const direction = await this.prisma.direction.findUnique({
-        where: { id: updateServiceDto.directionId },
+    // Si on modifie ou qu'on attribue un managerId
+    if (updateServiceDto.managerId) {
+      const isAlreadyManagingService = await this.prisma.service.findFirst({
+        where: {
+          managerId: updateServiceDto.managerId,
+          NOT: { id: id }, // Exclure le service actuel
+        },
       });
-      if (!direction) {
-        throw new NotFoundException(
-          `La direction avec l'ID ${updateServiceDto.directionId} n'existe pas.`,
-        );
+
+      if (isAlreadyManagingService) {
+        throw new BadRequestException('Ce manager supervise déjà un autre service.');
       }
     }
 
     return this.prisma.service.update({
       where: { id },
       data: updateServiceDto,
-      include: { direction: true },
+      include: {
+        direction: true,
+        manager: {
+          select: { id: true, nom: true, prenom: true, email: true },
+        },
+      },
     });
   }
 

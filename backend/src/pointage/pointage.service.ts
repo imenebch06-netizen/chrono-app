@@ -51,7 +51,8 @@ export class PointageService {
           const endAbs = new Date(abs.dateFin);
 
           // Durée accordée pour l'absence/récupération
-          const dureeAbs = abs.heures_a_recuperer || (endAbs.getTime() - startAbs.getTime()) / (1000 * 60 * 60);
+          const dureeAbs =
+            abs.heures_a_recuperer || (endAbs.getTime() - startAbs.getTime()) / (1000 * 60 * 60);
           heuresAbsenceTotal += dureeAbs;
 
           // Calcul du chevauchement exact entre la plage pointée [start, end] et l'absence [startAbs, endAbs]
@@ -59,7 +60,8 @@ export class PointageService {
           const overlapEnd = new Date(Math.min(end.getTime(), endAbs.getTime()));
 
           if (overlapStart < overlapEnd) {
-            heuresChevauchement += (overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60);
+            heuresChevauchement +=
+              (overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60);
           }
         }
 
@@ -85,11 +87,11 @@ export class PointageService {
             const hFinStr = planning.heureFin ?? '16:00';
             const [hDeb, mDeb] = hDebutStr.split(':').map(Number);
             const [hFin, mFin] = hFinStr.split(':').map(Number);
-            dureeTheoriqueBase = (hFin + mFin / 60) - (hDeb + mDeb / 60);
+            dureeTheoriqueBase = hFin + mFin / 60 - (hDeb + mDeb / 60);
           }
         } else {
           const jourSemaine = start.getDay();
-          dureeTheoriqueBase = (jourSemaine === 5 || jourSemaine === 6) ? 0.0 : 8.0;
+          dureeTheoriqueBase = jourSemaine === 5 || jourSemaine === 6 ? 0.0 : 8.0;
         }
 
         // 4. Durée théorique due (Théorique standard moins les heures de récupération accordées)
@@ -168,60 +170,98 @@ export class PointageService {
   /**
    * Récupère la vue calendrier / semaine d'un employé (sans doublons)
    */
-  async getSemaineEmploye(employeId: number, dateDebutStr: string) {
-    if (!dateDebutStr) {
-      throw new BadRequestException('Le paramètre dateDebut est requis.');
+async getSemaineEmploye(employeId: number, dateDebutStr: string) {
+  if (!dateDebutStr) {
+    throw new BadRequestException('Le paramètre dateDebut est requis.');
+  }
+
+  const debut = new Date(dateDebutStr);
+  const fin = new Date(debut);
+  fin.setDate(fin.getDate() + 7);
+
+  // 1. Récupérer les pointages
+  const rawPointages = await this.prisma.pointage.findMany({
+    where: {
+      employeId,
+      date: { gte: debut, lt: fin },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const uniquePointagesMap = new Map<string, (typeof rawPointages)[0]>();
+  for (const p of rawPointages) {
+    const dateKey = p.date.toISOString().split('T')[0];
+    if (!uniquePointagesMap.has(dateKey)) {
+      uniquePointagesMap.set(dateKey, p);
     }
+  }
+  let pointages = Array.from(uniquePointagesMap.values()).sort(
+    (a, b) => a.date.getTime() - b.date.getTime(),
+  );
 
-    const debut = new Date(dateDebutStr);
-    const fin = new Date(debut);
-    fin.setDate(fin.getDate() + 7);
+  // 2. Récupérer le planning sur la période
+  const plannings = await this.prisma.planning.findMany({
+    where: { employeId, dateDebut: { lte: fin }, dateFin: { gte: debut } },
+  });
 
-    const rawPointages = await this.prisma.pointage.findMany({
-      where: {
-        employeId,
-        date: { gte: debut, lt: fin },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  // 3. Générer toutes les dates de la semaine
+  const joursSemaine: Date[] = [];
+  for (let d = new Date(debut); d < fin; d.setDate(d.getDate() + 1)) {
+    joursSemaine.push(new Date(d));
+  }
 
-    const uniquePointagesMap = new Map<string, typeof rawPointages[0]>();
+  // 4. Compléter les jours sans pointage
+  for (const jour of joursSemaine) {
+    const dateKey = jour.toISOString().split('T')[0];
+    const existe = pointages.find(p => p.date.toISOString().split('T')[0] === dateKey);
 
-    for (const p of rawPointages) {
-      const dateKey = p.date.toISOString().split('T')[0];
-      if (!uniquePointagesMap.has(dateKey)) {
-        uniquePointagesMap.set(dateKey, p);
+    if (!existe) {
+      // Vérifier si le jour est prévu dans le planning
+      const planningJour = plannings.find(pl => jour >= pl.dateDebut && jour <= pl.dateFin);
+      if (planningJour) {
+        // Calculer les heures prévues à partir de heureDebut et heureFin
+        let heuresPrevues = 0;
+        if (planningJour.heureDebut && planningJour.heureFin) {
+          const [hDebut, mDebut] = planningJour.heureDebut.split(':').map(Number);
+          const [hFin, mFin] = planningJour.heureFin.split(':').map(Number);
+          heuresPrevues = (hFin + mFin / 60) - (hDebut + mDebut / 60);
+        }
+        // Ajouter un faux pointage avec débit négatif
+        pointages.push({
+          id: -1, // id fictif
+          employeId,
+          date: jour,
+          creditDebit: -(heuresPrevues || 0),
+          createdAt: new Date(),
+        } as any);
       }
     }
-
-    const pointages = Array.from(uniquePointagesMap.values()).sort(
-      (a, b) => a.date.getTime() - b.date.getTime(),
-    );
-
-    const totalCreditSemaine = pointages.reduce(
-      (acc, p) => acc + (p.creditDebit || 0),
-      0,
-    );
-
-    const compteur = await this.prisma.compteur.findUnique({
-      where: { employeId },
-    });
-
-    return {
-      employeId,
-      periode: {
-        du: debut.toISOString().split('T')[0],
-        au: fin.toISOString().split('T')[0],
-      },
-      totalCreditSemaine: Number(totalCreditSemaine.toFixed(2)),
-      pointages,
-      compteurGlobal: compteur ?? {
-        solde_conges: 0.0,
-        solde_rtt: 0.0,
-        credit_debit: 0.0,
-      },
-    };
   }
+
+  // 5. Re-trier après ajout
+  pointages = pointages.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  // 6. Calcul du total
+  const totalCreditSemaine = pointages.reduce((acc, p) => acc + (p.creditDebit || 0), 0);
+
+  const compteur = await this.prisma.compteur.findUnique({ where: { employeId } });
+
+  return {
+    employeId,
+    periode: {
+      du: debut.toISOString().split('T')[0],
+      au: fin.toISOString().split('T')[0],
+    },
+    totalCreditSemaine: Number(totalCreditSemaine.toFixed(2)),
+    pointages,
+    compteurGlobal: compteur ?? {
+      solde_conges: 0.0,
+      solde_rtt: 0.0,
+      credit_debit: 0.0,
+    },
+  };
+}
+
 
   /**
    * Récupère les employés ayant pointé pour une date donnée (ex: YYYY-MM-DD)
@@ -268,7 +308,9 @@ export class PointageService {
   private parseDateTime(dateVal: any, timeVal: any): Date | null {
     if (!dateVal || !timeVal) return null;
 
-    let year = 2026, month = 7, day = 1;
+    let year = 2026,
+      month = 7,
+      day = 1;
 
     if (dateVal instanceof Date && !isNaN(dateVal.getTime())) {
       year = dateVal.getFullYear();
@@ -304,7 +346,8 @@ export class PointageService {
       year = year + 100;
     }
 
-    let hours = 0, minutes = 0;
+    let hours = 0,
+      minutes = 0;
     if (timeVal instanceof Date && !isNaN(timeVal.getTime())) {
       hours = timeVal.getHours();
       minutes = timeVal.getMinutes();
@@ -334,7 +377,7 @@ export class PointageService {
     const parts = dateStr.split('T')[0].split('-').map(Number);
     const startOfDay = new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0);
     const endOfDay = new Date(parts[0], parts[1] - 1, parts[2], 23, 59, 59, 999);
-    
+
     const targetDate = new Date(parts[0], parts[1] - 1, parts[2], 12, 0, 0);
     const jourSemaine = targetDate.getDay();
 
@@ -361,12 +404,17 @@ export class PointageService {
       },
     });
 
-    const presents: Array<(typeof employes[number]) & { pointage: typeof pointages[number] }> = [];
-    const enConges: Array<(typeof employes[number]) & { absence: typeof absences[number] }> = [];
-    const enRecuperation: Array<(typeof employes[number]) & { absence: typeof absences[number] }> = [];
-    const autresAbsences: Array<(typeof employes[number]) & { absence: typeof absences[number] }> = [];
-    const enRepos: Array<(typeof employes[number]) & { motif: string }> = [];
-    const absentsInjustifies: Array<typeof employes[number]> = [];
+    const presents: Array<(typeof employes)[number] & { pointage: (typeof pointages)[number] }> =
+      [];
+    const enConges: Array<(typeof employes)[number] & { absence: (typeof absences)[number] }> = [];
+    const enRecuperation: Array<
+      (typeof employes)[number] & { absence: (typeof absences)[number] }
+    > = [];
+    const autresAbsences: Array<
+      (typeof employes)[number] & { absence: (typeof absences)[number] }
+    > = [];
+    const enRepos: Array<(typeof employes)[number] & { motif: string }> = [];
+    const absentsInjustifies: Array<(typeof employes)[number]> = [];
 
     for (const emp of employes) {
       const pointage = pointages.find((pt) => pt.employeId === emp.id);
@@ -387,10 +435,12 @@ export class PointageService {
         }
       } else {
         const planningData = planning as any;
-        const joursReposEmp = typeof planningData?.joursRepos === 'string'
-          ? planningData.joursRepos.split(',').map(Number)
-          : [5, 6];
-        const estEnRepos = joursReposEmp.includes(jourSemaine) || planning?.type_travail === 'REPOS';
+        const joursReposEmp =
+          typeof planningData?.joursRepos === 'string'
+            ? planningData.joursRepos.split(',').map(Number)
+            : [5, 6];
+        const estEnRepos =
+          joursReposEmp.includes(jourSemaine) || planning?.type_travail === 'REPOS';
 
         if (estEnRepos) {
           enRepos.push({ ...emp, motif: 'Repos Hebdomadaire (Planning)' });
@@ -419,7 +469,7 @@ export class PointageService {
       absentsInjustifies,
     };
   }
-  
+
   async deleteAllPointages() {
     await this.prisma.pointage.deleteMany({});
   }

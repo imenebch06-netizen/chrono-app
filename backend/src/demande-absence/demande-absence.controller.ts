@@ -110,16 +110,16 @@ export class DemandeAbsenceController {
   @ApiParam({ name: 'id', example: 1, description: 'ID de la demande' })
   @ApiResponse({ status: 200, description: 'Statut mis à jour.' })
   updateStatus(
-    @Param('id', ParseIntPipe) id: number, 
+    @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateStatusDto,
-    @Req() req: any
+    @Req() req: any,
   ) {
     // La logique interne du service s'assurera aussi qu'un Manager ne valide PAS un autre Manager !
     return this.service.updateStatus(id, dto, req.user);
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard,RolesGuard )
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN) // 🔑 Suppression réservée aux Managers et Admins
   @ApiOperation({ summary: 'Supprimer une demande' })
   @ApiParam({ name: 'id', example: 1, description: 'ID de la demande' })

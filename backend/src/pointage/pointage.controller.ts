@@ -41,7 +41,7 @@ export class PointageController {
 
   @Post('import-excel')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN,) // 🔑 Autorisé aux Admins et Managers
+  @Roles(Role.ADMIN) // 🔑 Autorisé aux Admins et Managers
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Importer des pointages depuis un fichier Excel' })

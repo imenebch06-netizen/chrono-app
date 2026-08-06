@@ -17,7 +17,7 @@ export class CreateServiceDto {
   @IsInt()
   @IsNotEmpty()
   directionId!: number;
-   @ApiProperty({
+  @ApiProperty({
     example: 1,
     description: 'ID du manager du service',
   })

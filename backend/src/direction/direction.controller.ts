@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseIntPipe,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
 import { DirectionsService } from './direction.service';
 import { CreateDirectionDto } from './dto/create-direction.dto';
@@ -26,7 +36,7 @@ export class DirectionsController {
 
   @Get()
   // 🔓 Accessible par TOUT utilisateur connecté (aucun @Roles spécifique requis)
-   // 🔑 Réservé aux ADMINS
+  // 🔑 Réservé aux ADMINS
   @ApiOperation({ summary: 'Récupérer la liste de toutes les directions' })
   @ApiResponse({ status: 200, description: 'Liste des directions récupérée.' })
   findAll() {

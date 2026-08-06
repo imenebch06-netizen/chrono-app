@@ -57,8 +57,18 @@ export class PlanningController {
   @Roles(Role.ADMIN, Role.MANAGER) // 🔑 Accès réservé aux Admins et Managers du même service
   @ApiOperation({ summary: "Obtenir les plannings d'un service spécifique" })
   @ApiParam({ name: 'serviceId', example: 1, description: 'ID du service' })
-  @ApiQuery({ name: 'dateDebut', required: false, example: '2026-08-01', description: 'Date de début de la plage' })
-  @ApiQuery({ name: 'dateFin', required: false, example: '2026-08-31', description: 'Date de fin de la plage' })
+  @ApiQuery({
+    name: 'dateDebut',
+    required: false,
+    example: '2026-08-01',
+    description: 'Date de début de la plage',
+  })
+  @ApiQuery({
+    name: 'dateFin',
+    required: false,
+    example: '2026-08-31',
+    description: 'Date de fin de la plage',
+  })
   @ApiResponse({ status: 200, description: 'Plannings du service récupérés.' })
   async getPlanningsByService(
     @Param('serviceId', ParseIntPipe) serviceId: number,

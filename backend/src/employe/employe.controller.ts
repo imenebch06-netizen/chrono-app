@@ -1,89 +1,68 @@
-import { Controller, Post, Body, Get, Param, ParseIntPipe, Patch, Delete, UseGuards, Req } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
-import { EmployeService } from './employe.service';
-import { CreateEmployeDto } from './dto/create-employe.dto';
-import { UpdateEmployeDto } from './dto/update-employe.dto';
-import { Roles } from '../auth/decorator/roles.decorator';
-import { Role } from '../auth/enums/role.enum';
+import { Body, Controller, Get, Param, ParseIntPipe, Post, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiConsumes } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
 import { OwnershipOrSameServiceGuard } from '../auth/guards/ownership-or-same-service.guard';
-import { SameServiceGuard } from '../auth/guards/same-service.guard';
+import { PlanningService } from '../planning/planning.service';
+import { PointageService } from '../pointage/pointage.service';
+import { CompteurService } from '../compteur/compteur.service';
+import { DemandeAbsenceService } from '../demande-absence/demande-absence.service';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { CreateDemandeAbsenceDto } from 'src/demande-absence/dto/create-demande-absence.dto';
 
-@ApiTags('Employés')
-@ApiBearerAuth() // 🔑 Nécessaire pour Swagger
-@Controller('employe')
+@ApiTags('Dashboard Employé')
+@ApiBearerAuth()
+@Controller('employe/dashboard')
 export class EmployeController {
-  constructor(private readonly employeService: EmployeService) {}
+  constructor(
+    private readonly planningService: PlanningService,
+    private readonly pointageService: PointageService,
+    private readonly compteurService: CompteurService,
+    private readonly demandeAbsenceService: DemandeAbsenceService,
+  ) {}
 
-  @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN) // 🔑 Seul l'Admin crée un employé
-  @ApiOperation({ summary: 'Créer un nouvel employé' })
-  @ApiResponse({ status: 201, description: 'Employé créé avec succès.' })
-  @ApiResponse({ status: 409, description: 'Cet email est déjà utilisé.' })
-  create(@Body() createEmployeDto: CreateEmployeDto) {
-    return this.employeService.create(createEmployeDto);
+  // 1️⃣ Consulter son planning
+  @Get(':employeId/planning')
+  @UseGuards(JwtAuthGuard, OwnershipOrSameServiceGuard)
+  @ApiOperation({ summary: "Consulter le planning d'un employé" })
+  async getPlanning(@Param('employeId', ParseIntPipe) employeId: number) {
+    return this.planningService.findByEmploye(employeId);
   }
 
-  @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard) // 🔒 Ajout de RolesGuard qui manquait !
-  @Roles(Role.ADMIN, Role.MANAGER) // 🔑 Vue globale réservée aux Admins et Managers
-  @ApiOperation({ summary: 'Obtenir la liste de tous les employés' })
-  @ApiResponse({ status: 200, description: 'Liste récupérée avec succès.' })
-  findAll() {
-    return this.employeService.findAll();
+  // 2️⃣ Consulter ses pointages (semaine courante)
+  @Get(':employeId/pointages')
+  @UseGuards(JwtAuthGuard, OwnershipOrSameServiceGuard)
+  @ApiOperation({ summary: "Consulter les pointages d'un employé" })
+  async getPointages(@Param('employeId', ParseIntPipe) employeId: number) {
+    return this.pointageService.getSemaineEmploye(employeId, new Date().toISOString());
   }
 
-  // ⚠️ CETTE ROUTE DOIT ÊTRE PLACÉE AVANT ':id' POUR ÉVITER LA COLLISION DE ROUTE
-  @Get('service/:serviceId')
-  @UseGuards(JwtAuthGuard, RolesGuard, SameServiceGuard)
-  @Roles(Role.ADMIN, Role.MANAGER)
-  @ApiOperation({ summary: "Obtenir tous les employés d'un service spécifique" })
-  @ApiParam({ name: 'serviceId', example: 1, description: 'ID du service' })
-  @ApiResponse({ status: 200, description: 'Liste des employés du service récupérée.' })
-  @ApiResponse({ status: 404, description: 'Service introuvable.' })
-  getEmployesByService(@Param('serviceId', ParseIntPipe) serviceId: number) {
-    return this.employeService.findByService(serviceId);
+  // 3️⃣ Consulter ses compteurs (Congés/RTT)
+  @Get(':employeId/compteur')
+  @UseGuards(JwtAuthGuard, OwnershipOrSameServiceGuard)
+  @ApiOperation({ summary: "Consulter les compteurs d'un employé" })
+  async getCompteur(@Param('employeId', ParseIntPipe) employeId: number) {
+    return this.compteurService.getByEmploye(employeId);
   }
 
-  @Get(':id')
-  @UseGuards(JwtAuthGuard, OwnershipOrSameServiceGuard) // 🔒 Propre profil, Manager du même service ou Admin
-  @ApiOperation({ summary: 'Obtenir un employé par son ID' })
-  @ApiParam({ name: 'id', example: 1, description: "ID de l'employé" })
-  @ApiResponse({ status: 200, description: 'Employé trouvé.' })
-  @ApiResponse({ status: 404, description: 'Employé introuvable.' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.employeService.findOne(id);
+  // 4️⃣ Consulter ses demandes d’absence
+  @Get(':employeId/demandes')
+  @UseGuards(JwtAuthGuard, OwnershipOrSameServiceGuard)
+  @ApiOperation({ summary: "Consulter les demandes d'absence d'un employé" })
+  async getDemandes(@Param('employeId', ParseIntPipe) employeId: number) {
+    return this.demandeAbsenceService.findByEmploye(employeId);
   }
 
-  @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN) // 🔑 Seul l'Admin modifie la fiche d'un employé
-  @ApiOperation({ summary: "Mettre à jour les informations d'un employé" })
-  @ApiParam({ name: 'id', example: 1, description: "ID de l'employé" })
-  @ApiResponse({ status: 200, description: 'Employé mis à jour.' })
-  @ApiResponse({ status: 404, description: 'Employé introuvable.' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() updateEmployeDto: UpdateEmployeDto) {
-    return this.employeService.update(id, updateEmployeDto);
+  // 5️⃣ Créer une demande d’absence
+  @Post(':employeId/demande-absence')
+  @UseGuards(JwtAuthGuard)
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('justificatif'))
+  @ApiOperation({ summary: "Créer une demande d'absence avec justificatif" })
+  async createDemandeAbsence(
+    @Body() dto: CreateDemandeAbsenceDto,
+    @Req() req: any,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.demandeAbsenceService.create(dto, req.user, file);
   }
-
-  @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN) // 🔑 Seul l'Admin peut supprimer
-  @ApiOperation({ summary: 'Supprimer un employé' })
-  @ApiParam({ name: 'id', example: 1, description: "ID de l'employé" })
-  @ApiResponse({ status: 200, description: 'Employé supprimé.' })
-  @ApiResponse({ status: 404, description: 'Employé introuvable.' })
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.employeService.remove(id);
-  }
-  @Get('mon-equipe')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.MANAGER, Role.ADMIN)
-@ApiOperation({ summary: 'Obtenir la liste de ses subordonnés et des employés de son service' })
-async getMonEquipe(@Req() req: any) {
-  return this.employeService.findEquipeDuManager(req.user.id, req.user.serviceId);
-}
-
 }

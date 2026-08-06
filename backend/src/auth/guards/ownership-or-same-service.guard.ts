@@ -1,5 +1,11 @@
 // src/auth/guards/ownership-or-same-service.guard.ts
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Role } from '../enums/role.enum';
 
@@ -41,6 +47,8 @@ export class OwnershipOrSameServiceGuard implements CanActivate {
     }
 
     // Si aucune condition n'est remplie -> Accès refusé
-    throw new ForbiddenException("Vous n'avez pas les droits nécessaires pour accéder à cette ressource.");
+    throw new ForbiddenException(
+      "Vous n'avez pas les droits nécessaires pour accéder à cette ressource.",
+    );
   }
 }

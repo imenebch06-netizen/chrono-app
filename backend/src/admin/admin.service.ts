@@ -20,7 +20,13 @@ export class AdminService {
     const jourSemaine = new Date(year, month, day, 12, 0, 0).getDay();
 
     // 2. Chargement de TOUS les employés et de leurs données du jour
-    const [employes, pointagesDuJour, demandesValidesAujourdhui, planningsAujourdhui, demandesEnAttenteTotal] = await Promise.all([
+    const [
+      employes,
+      pointagesDuJour,
+      demandesValidesAujourdhui,
+      planningsAujourdhui,
+      demandesEnAttenteTotal,
+    ] = await Promise.all([
       this.prisma.employe.findMany({ select: { id: true } }),
 
       this.prisma.pointage.findMany({
@@ -83,11 +89,11 @@ export class AdminService {
       // - Soit son planning indique type_travail = 'REPOS'
       // - Soit le jour actuel fait partie de ses `joursRepos` (ex: [5, 6])
       const joursReposEmp = planning
-        ? (Array.isArray((planning as any).joursRepos)
-            ? (planning as any).joursRepos
-            : typeof (planning as any).joursRepos === 'string'
-              ? (planning as any).joursRepos.split(',').map(Number)
-              : [5, 6])
+        ? Array.isArray((planning as any).joursRepos)
+          ? (planning as any).joursRepos
+          : typeof (planning as any).joursRepos === 'string'
+            ? (planning as any).joursRepos.split(',').map(Number)
+            : [5, 6]
         : [5, 6]; // jours de repos par défaut si pas de planning spécifique
 
       const estEnRepos = planning?.type_travail === 'REPOS' || joursReposEmp.includes(jourSemaine);
@@ -120,4 +126,73 @@ export class AdminService {
       demandesEnAttenteTotal,
     };
   }
+
+
+  async getRetardsAdmin() {
+    const today = new Date();
+
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+
+    const pointages = (await this.prisma.pointage.findMany({
+      where: { date: { gte: startOfDay, lte: endOfDay } },
+      include: { employe: true },
+    })) as any[];
+
+    const retards: any[] = [];
+
+  for (const p of pointages) {
+    const planning = await this.prisma.planning.findFirst({
+      where: {
+        employeId: p.employeId,
+        dateDebut: { lte: today },
+        dateFin: { gte: today },
+      },
+    });
+
+      if (planning && planning.heureDebut && p.heureArrivee && new Date(p.heureArrivee) > new Date(planning.heureDebut)) {
+        const retardMinutes =
+          (new Date(p.heureArrivee).getTime() - new Date(planning.heureDebut).getTime()) /
+          (1000 * 60);
+
+      const demande = await this.prisma.demandeAbsence.findFirst({
+        where: {
+          employeId: p.employeId,
+          status: 'VALIDE',
+          dateDebut: { lte: today },
+          dateFin: { gte: today },
+        },
+      });
+
+        retards.push({
+          employe: `${p.employe.prenom} ${p.employe.nom}`,
+          heurePrevue: planning.heureDebut,
+          heureArrivee: p.heureArrivee,
+          retardMinutes,
+          estJustifie: !!demande,
+          justificatifUrl: demande?.justificatif || null,
+        });
+    }
+  }
+
+  return retards;
+}
+// GET /api/demandes-absence/admin/en-attente
+async findAllPendingForAdmin() {
+  return this.prisma.demandeAbsence.findMany({
+    where: { status: 'EN_ATTENTE' },
+    include: {
+      employe: {
+        select: {
+          id: true,
+          nom: true,
+          prenom: true,
+          service: { select: { nom_service: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
 }
