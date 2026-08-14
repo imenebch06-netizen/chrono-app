@@ -1,0 +1,209 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// ENUMS
+// ==========================================
+
+enum Role {
+  EMPLOYE
+  ADMIN
+}
+
+enum StatutDemande {
+  EN_ATTENTE
+  VALIDE
+  REFUSE
+}
+
+enum TypeDemande {
+  CONGE
+  ABSENCE
+  RECUPERATION
+}
+
+// ==========================================
+// STRUCTURE ORGANISATIONNELLE (ARBRE)
+// ==========================================
+
+// 1. Dictionnaire des types d'organisations
+model TypeOrganization {
+  id            Int            @id @default(autoincrement())
+  code          String         @unique // "DG", "DIRECTION", "DEPARTEMENT", "SERVICE"
+  libelle       String         // "Direction Générale", "Direction", "Département", "Service"
+  
+  organizations Organization[]
+}
+
+// 2. Table unique hiérarchique (Modèle Arbre + Materialized Path pour MySQL)
+model Organization {
+  id                  Int               @id @default(autoincrement())
+  nom                 String
+  
+  // 🔑 Chemin matérialisé pour la recherche récursive ultra-rapide sous MySQL (Ex: "1/2/5")
+  path                String?
+
+  // A. Type de l'organisation (DG, Direction, Département, Service)
+  typeOrganizationId  Int
+  typeOrganization    TypeOrganization  @relation(fields: [typeOrganizationId], references: [id])
+
+  // B. Auto-référence : L'organisation parente
+  idOrganizationSup   Int?
+  parent              Organization?     @relation("OrgHierarchy", fields: [idOrganizationSup], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  
+  // C. Auto-référence : Les sous-organisations enfants
+  children            Organization[]    @relation("OrgHierarchy")
+
+  // D. Manager unique de cette organisation
+  managerId           Int?              @unique
+  manager             Employe?          @relation("OrganizationManager", fields: [managerId], references: [id])
+
+  // E. Liste des employés rattachés à cette organisation
+  membres             Employe[]         @relation("OrganizationMembers")
+  
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+}
+
+// ==========================================
+// UTILISATEURS / EMPLOYÉS
+// ==========================================
+
+model Employe {
+  id                  Int               @id @default(autoincrement())
+  nom                 String
+  prenom              String
+  email               String            @unique
+  password            String
+  adress              String?
+  role                Role              @default(EMPLOYE)
+
+  // Rattachement à une organisation (DG, Direction, Dept ou Service)
+  organizationId      Int?
+  organization        Organization?     @relation("OrganizationMembers", fields: [organizationId], references: [id], onDelete: SetNull)
+
+  // Organisation dont cet employé est le chef
+  organizationGeree   Organization?     @relation("OrganizationManager")
+  
+  // Relations métier
+  compteur            Compteur?
+  plannings           Planning[]
+  pointages           Pointage[]
+  demandesAbsence     DemandeAbsence[]
+  notifications       Notification[] // 👈 NOUVELLE RELATION
+  
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+}
+
+// ==========================================
+// DEMANDES D'ABSENCE
+// ==========================================
+
+model DemandeAbsence {
+  id                 Int           @id @default(autoincrement())
+  typeDemande        TypeDemande
+  dateDebut          DateTime
+  dateFin            DateTime
+  status             StatutDemande @default(EN_ATTENTE)
+  motif              String
+  justificatif       String?
+
+  // Champs spécifiques selon le type
+  type_conge         String?
+  justifie           Boolean?      @default(false)
+  heures_a_recuperer Float?
+
+  // Relation avec Employe
+  employeId          Int
+  employe            Employe       @relation(fields: [employeId], references: [id], onDelete: Cascade)
+
+  planningId Int?      
+  planning   Planning? @relation(fields: [planningId], references: [id])
+
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+}
+
+// ==========================================
+// PLANNINGS & SHIFTS
+// ==========================================
+
+model Planning {
+  id              Int      @id @default(autoincrement())
+  employeId       Int
+  employe         Employe  @relation(fields: [employeId], references: [id], onDelete: Cascade)
+  dateDebut       DateTime
+  dateFin         DateTime
+  heureDebut      String?  // Ex: "08:00"
+  heureFin        String?  // Ex: "16:00"
+  type_travail    String   // "NORMAL", "SHIFT_3X8", "FLEXIBLE", "REPOS"
+  typeShift       String?  // "MATIN", "SOIR", "NUIT"
+  demandes  DemandeAbsence[] // Relation inverse
+  plageFixeDebut String?
+  plageFixeFin   String?
+  joursRepos     String?  // Ex: "5,6"
+  createdAt       DateTime @default(now())
+}
+
+// ==========================================
+// POINTAGES
+// ==========================================
+
+model Pointage {
+  id          Int       @id @default(autoincrement())
+  date        DateTime
+  heureDebut  DateTime
+  heureFin    DateTime?
+  dureeHeures Float?
+  creditDebit Float?
+
+  employeId   Int
+  employe     Employe   @relation(fields: [employeId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+
+  @@unique([employeId, date])
+}
+
+// ==========================================
+// COMPTEUR DE SOLDES
+// ==========================================
+
+model Compteur {
+  id           Int     @id @default(autoincrement())
+  solde_conges Float   @default(0.0)
+  solde_rtt    Float   @default(0.0)
+  credit_debit Float   @default(0.0)
+
+  employeId    Int     @unique
+  employe      Employe @relation(fields: [employeId], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// NOTIFICATIONS
+// ==========================================
+
+model Notification {
+  id         Int      @id @default(autoincrement())
+  titre      String
+  message    String
+  type       String   // "DEMANDE_CREEE", "DEMANDE_VALIDEE", "DEMANDE_REFUSEE"
+  isRead     Boolean  @default(false)
+
+  // Destinataire (Manager ou Employé, JAMAIS l'Admin)
+  employeId  Int
+  employe    Employe  @relation(fields: [employeId], references: [id], onDelete: Cascade)
+
+  // Référence facultative vers la demande d'absence
+  demandeId  Int?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
