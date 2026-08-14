@@ -1,0 +1,87 @@
+<div class="p-24">
+
+ <mat-chip-listbox class="flex flex-wrap gap-2 mb-6" aria-label="Filtrer par état">
+  <!-- TOUS -->
+  <mat-chip-option 
+    [selected]="filtreEtatActif === 'TOUS'" 
+    (click)="filtrerParEtat('TOUS')">
+    Tous
+  </mat-chip-option>
+
+  <!-- PRÉSENTS -->
+  <mat-chip-option 
+    [selected]="filtreEtatActif === 'PRESENT'" 
+    (click)="filtrerParEtat('PRESENT')">
+    <mat-icon matChipAvatar class="!text-emerald-500">check_circle</mat-icon>
+    Présents
+  </mat-chip-option>
+
+  <!-- EN CONGÉ -->
+  <mat-chip-option 
+    [selected]="filtreEtatActif === 'CONGE'" 
+    (click)="filtrerParEtat('CONGE')">
+    <mat-icon matChipAvatar class="!text-blue-500">flight_takeoff</mat-icon>
+    En Congé
+  </mat-chip-option>
+
+  <!-- RÉCUPÉRATION -->
+  <mat-chip-option 
+    [selected]="filtreEtatActif === 'RECUPERATION'" 
+    (click)="filtrerParEtat('RECUPERATION')">
+    <mat-icon matChipAvatar class="!text-indigo-500">autorenew</mat-icon>
+    Récupération
+  </mat-chip-option>
+
+  <!-- REPOS -->
+  <mat-chip-option 
+    [selected]="filtreEtatActif === 'REPOS'" 
+    (click)="filtrerParEtat('REPOS')">
+    <mat-icon matChipAvatar class="!text-slate-400">bed</mat-icon>
+    Repos
+  </mat-chip-option>
+
+  <!-- ABSENTS JUSTIFIÉS -->
+  <mat-chip-option 
+    [selected]="filtreEtatActif === 'ABSENT_JUSTIFIE'" 
+    (click)="filtrerParEtat('ABSENT_JUSTIFIE')">
+    <mat-icon matChipAvatar class="!text-amber-500">verified</mat-icon>
+    Absents Justifiés
+  </mat-chip-option>
+
+  <!-- ABSENTS NON JUSTIFIÉS -->
+  <mat-chip-option 
+    [selected]="filtreEtatActif === 'ABSENT_NON_JUSTIFIE'" 
+    (click)="filtrerParEtat('ABSENT_NON_JUSTIFIE')">
+    <mat-icon matChipAvatar class="!text-rose-500">warning</mat-icon>
+    Absents Non Justifiés
+  </mat-chip-option>
+</mat-chip-listbox>
+  <!-- 🟢 BARRE D'ACTIONS -->
+  <div class="d-flex align-items-center justify-content-between m-b-20 flex-wrap gap-16">
+    
+    <!-- Filtre Recherche -->
+    <mat-form-field appearance="outline" class="hide-hint" style="max-width: 300px;">
+      <mat-label>Rechercher un employé...</mat-label>
+      <input matInput (keyup)="filtrerTable($event)" placeholder="Nom, service...">
+      <i-tabler matPrefix name="search" class="icon-18 m-r-8 text-muted"></i-tabler>
+    </mat-form-field>
+
+    <!-- Bouton Ajouter -->
+    @if (!isReadOnly) {
+      <button mat-flat-button color="primary" class="d-flex align-items-center gap-8" (click)="ajouterEmploye()">
+        <i-tabler name="plus" class="icon-18"></i-tabler>
+        <span>Ajouter un employé</span>
+      </button>
+    }
+  </div>
+
+  <!-- 🟢 TABLEAU (Référence #maTable ajoutée) -->
+  <app-data-table 
+    #maTable 
+    [viewMode]="viewMode" 
+    [showEditDelete]="!isReadOnly"
+    [isReadOnly]="isReadOnly"
+    [enableSelection]="false">
+  </app-data-table>
+
+</div>

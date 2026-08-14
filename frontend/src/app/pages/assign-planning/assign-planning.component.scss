@@ -1,0 +1,67 @@
+:root {
+  --mat-sys-primary: rgb(99, 91, 255);              // Violet/bleu principal
+  --mat-sys-primary-fixed-dim: rgba(99, 91, 255, 0.15);
+  --mat-sys-secondary: rgb(22, 205, 199);           // Turquoise secondaire
+  --mat-sys-secondary-fixed-dim: rgba(22, 205, 199, 0.15);
+}
+
+.card-dash {
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  transition: box-shadow 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 6px 18px var(--mat-sys-primary-fixed-dim);
+  }
+
+  .card-header {
+    background: linear-gradient(90deg, var(--mat-sys-primary), var(--mat-sys-secondary));
+    color: #fff;
+    padding: 12px 16px;
+
+    .title-text {
+      font-weight: 600;
+      font-size: 1.1rem;
+      letter-spacing: 0.5px;
+    }
+
+    mat-icon {
+      color: #fff !important;
+    }
+  }
+
+  mat-card-content {
+    background-color: #fafafa;
+    border-top: 1px solid var(--mat-sys-primary-fixed-dim);
+  }
+}
+
+.search-field {
+  max-width: 300px;
+
+  .mat-form-field-outline {
+    border-radius: 8px;
+    border-color: var(--mat-sys-primary);
+  }
+
+  mat-icon {
+    color: var(--mat-sys-primary);
+  }
+}
+
+button[mat-flat-button] {
+  border-radius: 8px;
+  font-weight: 600;
+  background: linear-gradient(90deg, var(--mat-sys-primary), var(--mat-sys-secondary));
+  color: #fff;
+
+  mat-icon {
+    margin-right: 4px;
+    color: #fff;
+  }
+
+  &:hover {
+    background: linear-gradient(90deg, var(--mat-sys-secondary), var(--mat-sys-primary));
+  }
+}

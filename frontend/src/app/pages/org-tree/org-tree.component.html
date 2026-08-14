@@ -1,0 +1,90 @@
+<mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="org-tree-vertical">
+
+  <!-- 1. NŒUD PARENT (AVEC ENFANTS) -->
+  <mat-nested-tree-node *matTreeNodeDef="let node; when: hasChild">
+    <div class="node-wrapper">
+      
+      <!-- Carte d'organisation -->
+      <div class="org-card" (click)="treeControl.toggle(node)">
+        
+        <!-- En-tête : Nom & Badge Type -->
+        <div class="card-header">
+          <div class="title-group">
+            <h4 class="org-title" [title]="node.nom">{{ node.nom }}</h4>
+            <span *ngIf="node.typeOrganization?.code" 
+                  class="type-badge" 
+                  [ngClass]="getBadgeClass(node.typeOrganization?.code)">
+              {{ node.typeOrganization?.code }}
+            </span>
+          </div>
+
+          <button mat-icon-button class="toggle-btn" (click)="$event.stopPropagation(); treeControl.toggle(node)">
+            <mat-icon>{{ treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right' }}</mat-icon>
+          </button>
+        </div>
+
+        <!-- Corps : Manager & Effectif -->
+        <div class="card-body">
+          <div class="info-pill manager-pill">
+            <mat-icon class="pill-icon">person</mat-icon>
+            <span *ngIf="node.manager" class="manager-name">
+              {{ node.manager.prenom }} {{ node.manager.nom }}
+            </span>
+            <span *ngIf="!node.manager" class="vacant-tag">Vacant</span>
+          </div>
+
+          <div class="info-pill effectif-pill">
+            <mat-icon class="pill-icon text-indigo">group</mat-icon>
+            <span class="effectif-count">{{ getTotalEffectif(node) }} pers.</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Conteneur des Enfants (Empilage Haut vers Bas) -->
+      <div [class.hidden]="!treeControl.isExpanded(node)" class="children-branch">
+        <ng-container matTreeNodeOutlet></ng-container>
+      </div>
+
+    </div>
+  </mat-nested-tree-node>
+
+
+  <!-- 2. NŒUD FEUILLE (SANS ENFANTS) -->
+  <mat-tree-node *matTreeNodeDef="let node">
+    <div class="node-wrapper">
+      <div class="org-card leaf-card">
+        
+        <!-- En-tête : Nom & Badge Type -->
+        <div class="card-header">
+          <div class="title-group">
+            <h4 class="org-title" [title]="node.nom">{{ node.nom }}</h4>
+            <span *ngIf="node.typeOrganization?.code" 
+                  class="type-badge" 
+                  [ngClass]="getBadgeClass(node.typeOrganization?.code)">
+              {{ node.typeOrganization?.code }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Corps : Manager & Effectif -->
+        <div class="card-body">
+          <div class="info-pill manager-pill">
+            <mat-icon class="pill-icon">person</mat-icon>
+            <span *ngIf="node.manager" class="manager-name">
+              {{ node.manager.prenom }} {{ node.manager.nom }}
+            </span>
+            <span *ngIf="!node.manager" class="vacant-tag">Vacant</span>
+          </div>
+
+          <div class="info-pill effectif-pill">
+            <mat-icon class="pill-icon text-indigo">group</mat-icon>
+            <span class="effectif-count">{{ getTotalEffectif(node) }} pers.</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </mat-tree-node>
+
+</mat-tree>

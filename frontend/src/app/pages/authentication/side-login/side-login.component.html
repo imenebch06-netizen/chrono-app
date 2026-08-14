@@ -1,0 +1,116 @@
+<div class="d-flex align-items-center justify-content-center min-vh-100 p-24 bg-light">
+  <div class="position-relative row w-100 h-100 bg-gredient justify-content-center">
+    <div class="col-lg-4 d-flex justify-content-center align-items-center">
+      <mat-card class="cardWithShadow boxed-auth justify-content-center align-items-center">
+        <mat-card-content class="p-32" >
+          
+       <!-- Logo -->
+<!-- Logo -->
+<div class="text-center" style="display: flex; justify-content: center; align-items: center;">
+  <a [routerLink]="['/dashboard']" style="display: inline-block; width: 100%; text-align: center;">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 220" width="50%" height="50%" style="display: block; margin: 0 auto;">
+      <!-- Icone Centrée -->
+      <g transform="translate(100, 15)">
+        <rect x="0" y="0" width="100" height="100" rx="28" fill="#EEF2FF"/>
+        <path d="M 68 32 A 26 26 0 1 0 68 68" fill="none" stroke="#4338CA" stroke-width="8" stroke-linecap="round"/>
+        <path d="M 50 50 L 50 34 M 50 50 L 62 50" stroke="#4338CA" stroke-width="6" stroke-linecap="round"/>
+      </g>
+      <!-- Textes Centrés -->
+      <text x="150" y="160"
+            text-anchor="middle"
+            font-family="'Inter', -apple-system, sans-serif"
+            font-weight="900"
+            font-size="44"
+            fill="#0F172A"
+            letter-spacing="-0.5">CHRONO</text>
+      <text x="150" y="185"
+            text-anchor="middle"
+            font-family="'Inter', -apple-system, sans-serif"
+            font-weight="700"
+            font-size="12"
+            fill="#6366F1"
+            letter-spacing="5">TIME MANAGEMENT</text>
+    </svg>
+  </a>
+</div>
+
+
+          <!-- 🛡️ Badge d'information Métier -->
+<div class="bg-light-primary rounded p-16 m-t-24 d-flex align-items-center gap-12">
+  <i-tabler name="building-skyscraper" class="icon-28 text-primary flex-shrink-0"></i-tabler>
+  <div>
+    <div class="f-s-14 f-w-600 text-dark">Portail RH & Organisations</div>
+    <div class="f-s-12 text-muted">Espace sécurisé réservé aux collaborateurs et managers</div>
+  </div>
+</div>
+
+<div class="or-border m-t-24 m-b-24">Authentification</div>
+
+          <!-- 🟢 FORMULAIRE BRANCHÉ À ANGULAR -->
+          <!-- 🟢 FORMULAIRE TRADUIT EN FRANÇAIS -->
+        <form [formGroup]="form" (ngSubmit)="submit()" class="m-t-20">
+          
+          <!-- Email -->
+          <mat-label class="f-s-14 f-w-600 m-b-8 d-block">Adresse e-mail</mat-label>
+          <mat-form-field appearance="outline" class="w-100" color="primary">
+            <input 
+              matInput 
+              formControlName="uname" 
+              type="email" 
+              placeholder="ex: admin@entreprise.com" />
+          </mat-form-field>
+
+          <!-- Mot de passe -->
+          <mat-label class="f-s-14 f-w-600 m-b-8 d-block">Mot de passe</mat-label>
+          <mat-form-field appearance="outline" class="w-100" color="primary">
+            <input 
+              matInput 
+              formControlName="password" 
+              type="password" 
+              placeholder="••••••••" />
+          </mat-form-field>
+
+          <!-- Se souvenir de moi + Mot de passe oublié -->
+          <div class="d-flex align-items-center justify-content-between m-b-20 flex-wrap gap-8">
+            <mat-checkbox color="primary" class="f-s-14">
+              Se souvenir de moi
+            </mat-checkbox>
+            
+            <a 
+              (click)="motDePasseOublie()" 
+              class="text-primary f-w-600 text-decoration-none f-s-14 cursor-pointer">
+              Mot de passe oublié ?
+            </a>
+          </div>
+
+          <!-- 🟢 MESSAGE D'ERREUR LORS DU LOGIN -->
+          @if (errorMessage) {
+            <div class="text-error m-b-16 f-s-14 p-12 bg-light-error rounded d-flex align-items-center gap-8">
+              <span>{{ errorMessage }}</span>
+            </div>
+          }
+
+          <!-- 🟢 BOUTON DE CONNEXION -->
+          <button 
+            mat-flat-button 
+            color="primary" 
+            class="w-100 p-y-12 f-s-16 f-w-600" 
+            type="submit" 
+            [disabled]="isLoading">
+            {{ isLoading ? 'Connexion en cours...' : 'Se connecter' }}
+          </button>
+
+        </form>
+
+        <!-- 🟢 CRÉATION DE COMPTE -->
+        <span class="d-block f-w-500 text-center m-t-24 text-muted f-s-14">
+          Nouveau sur la plateforme ?
+          <a [routerLink]="['/authentication/register']" class="text-decoration-none text-primary f-w-600 m-l-4">
+            Créer un compte
+          </a>
+        </span>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,187 @@
+<mat-toolbar class="topbar gap-8">
+  <!-- Mobile Menu -->
+  @if(!showToggle) {
+  <button mat-icon-button (click)="toggleMobileNav.emit()" class="d-flex justify-content-center">
+    <i class="iconify icon-20 d-flex" data-icon="solar:hamburger-menu-line-duotone"></i>
+  </button>
+  }
+
+ <!-- Notifications Section (Masquée pour ADMIN) -->
+  @if (currentUser?.role !== 'ADMIN') {
+    <button 
+      mat-icon-button 
+      aria-label="Notifications" 
+      [matMenuTriggerFor]="notificationMenu" 
+      class="d-flex align-items-center justify-content-center"
+    >
+      <div 
+        [matBadge]="unreadCount" 
+        [matBadgeHidden]="unreadCount === 0" 
+        matBadgeColor="warn" 
+        matBadgeSize="small" 
+        matBadgeOverlap="false"
+      >
+        <i class="iconify icon-20 d-flex" data-icon="solar:bell-line-duotone"></i>
+      </div>
+    </button>
+
+    <mat-menu #notificationMenu="matMenu" class="notification-menu-panel" xPosition="before">
+      <!-- En-tête -->
+      <div class="notification-header d-flex align-items-center justify-content-between">
+        <span class="f-s-15 f-w-700 text-dark m-b-0">Notifications</span>
+        <span class="notification-badge-pill">
+          {{ unreadCount }} non lue(s)
+        </span>
+      </div>
+
+      <!-- Liste scrollable sous forme de cartes -->
+      <div class="notification-list-container">
+        @if (notifications.length === 0) {
+          <div class="p-24 text-center text-muted f-s-13">
+            <i class="iconify icon-32 m-b-8 d-block opacity-50" data-icon="solar:bell-off-line-duotone"></i>
+            Aucune notification pour le moment.
+          </div>
+        } @else {
+          @for (item of notifications; track item.id) {
+            <div 
+              class="notification-card-item d-flex align-items-start justify-content-between gap-12"
+              [class.is-unread]="!item.isRead"
+              (click)="onNotificationClick(item)"
+            >
+              <div class="d-flex gap-12 align-items-start flex-grow-1">
+                
+                <!-- Icône adaptée aux types de demandes -->
+                <div 
+                  class="icon-box"
+                  [class.box-warning]="item.type === 'DEMANDE_CREEE'"
+                  [class.box-success]="item.type === 'DEMANDE_VALIDEE'"
+                  [class.box-error]="item.type === 'DEMANDE_REFUSEE'"
+                >
+                  @if (item.type === 'DEMANDE_CREEE') {
+                    <i class="iconify icon-20" data-icon="solar:document-add-bold"></i>
+                  } @else if (item.type === 'DEMANDE_VALIDEE') {
+                    <i class="iconify icon-20" data-icon="solar:check-circle-bold"></i>
+                  } @else {
+                    <i class="iconify icon-20" data-icon="solar:close-circle-bold"></i>
+                  }
+                </div>
+
+                <!-- Contenu textuel de la carte -->
+                <div class="flex-grow-1">
+                  <div class="notif-title">{{ item.titre }}</div>
+                  <div class="notif-message">{{ item.message }}</div>
+                  <div class="notif-date">{{ item.createdAt | date:'dd/MM/yyyy à HH:mm' }}</div>
+                </div>
+              </div>
+
+              <!-- Bouton Supprimer (Garantie d'affichage grâce à MatIcon) -->
+              <button 
+                type="button"
+                class="btn-delete"
+                (click)="deleteNotification(item.id, $event)"
+                title="Supprimer"
+              >
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+
+            </div>
+          }
+        }
+      </div>
+    </mat-menu>
+  }
+
+  <span class="flex-1-auto"></span>
+<!-- 🟢 CONTENEUR PRINCIPAL : Force l'alignement horizontal ultra-compact -->
+<div style="display: flex !important; align-items: center !important; gap: 10px !important; height: 100% !important; margin-left: auto !important;">
+
+  <!-- 🟢 1. CAPSULE NOM & PRÉNOM (Taille fixe, fond indigo pastel doux) -->
+  <div style="
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 5px 14px !important;
+    border-radius: 50px !important;
+    background-color: #eef2ff !important;
+    border: 1px solid #c7d2fe !important;
+    color: #1e1b4b !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    line-height: 1 !important;
+  ">
+    <!-- Icône SVG bloquée STRICTEMENT à 14x14px (Empêche l'icône géante) -->
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 14px !important; height: 14px !important; min-width: 14px !important; display: block !important;">
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+      <circle cx="12" cy="7" r="4"></circle>
+    </svg>
+
+    <!-- Texte Nom & Prénom -->
+    <span style="display: inline-block !important; line-height: 1 !important; vertical-align: middle !important;">
+      {{ currentUser?.prenom || currentUser?.firstName || 'Système' }} {{ currentUser?.nom || currentUser?.lastName || 'Admin' }}
+    </span>
+  </div>
+
+  <!-- 🟢 2. BOUTON PHOTO (Taille bloquée à 35x35px sans décalage) -->
+  <button 
+    [matMenuTriggerFor]="profilemenu" 
+    type="button"
+    aria-label="Profil utilisateur"
+    style="
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 35px !important;
+      height: 35px !important;
+      min-width: 35px !important;
+      min-height: 35px !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      border: none !important;
+      background: transparent !important;
+      cursor: pointer !important;
+      outline: none !important;
+      box-shadow: none !important;
+    ">
+    
+    <img 
+      src="/assets/images/profile/user-1.jpg" 
+      alt="Photo de profil" 
+      width="35"
+      height="35"
+      style="
+        width: 35px !important;
+        height: 35px !important;
+        border-radius: 50% !important;
+        object-fit: cover !important;
+        display: block !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      " 
+    />
+  </button>
+
+</div>
+
+  <mat-menu #profilemenu="matMenu" class="topbar-dd cardWithShadow">
+    
+    <!-- 1️⃣ Option Profil (Redirige vers la route profil du sidebar) -->
+    <button mat-menu-item [routerLink]="['/profil']">
+      <mat-icon class="d-flex align-items-center">
+        <i data-icon="solar:user-id-line-duotone" class="iconify icon-22"></i>
+      </mat-icon>
+      <span>Mon Profil</span>
+    </button>
+
+    <mat-divider></mat-divider>
+
+    <!-- 2️⃣ Option Déconnexion -->
+    <button mat-menu-item (click)="logout()" class="text-danger">
+      <mat-icon class="d-flex align-items-center text-danger">
+        <i data-icon="solar:logout-3-line-duotone" class="iconify icon-22"></i>
+      </mat-icon>
+      <span class="f-w-600">Déconnexion</span>
+    </button>
+
+  </mat-menu>
+</mat-toolbar>
