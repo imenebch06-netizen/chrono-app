@@ -2,28 +2,45 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorator/roles.decorator';
-import { Role } from '../enums/role.enum';
+import { Role, ExtendedRole } from '../enums/role.enum';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    // 1. Récupérer les rôles définis sur le Controller ou le Handler
-    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
+    // 1. Récupérer les rôles exigés sur la route ou le contrôleur
+    const requiredRoles = this.reflector.getAllAndOverride<ExtendedRole[]>(ROLES_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
 
-    // 2. Si aucun rôle n'est spécifié, la route est accessible par tout utilisateur authentifié
+    // 2. Si aucun rôle n'est spécifié, la route est libre d'accès pour tout utilisateur authentifié
     if (!requiredRoles) {
       return true;
     }
 
-    // 3. Récupérer l'utilisateur depuis la requête (mis par le JwtAuthGuard)
+    // 3. Récupérer l'utilisateur injecté par JwtAuthGuard / JwtStrategy
     const { user } = context.switchToHttp().getRequest();
 
-    // 4. Vérifier si l'utilisateur possède l'un des rôles autorisés
-    return requiredRoles.some((role) => user?.role === role);
+    if (!user) {
+      return false;
+    }
+
+    // 🔑 4. L'ADMIN a un accès global sur toutes les routes protégées
+    if (user.role === Role.ADMIN) {
+      return true;
+    }
+
+    // 🔑 5. Vérification dynamique des rôles requis
+    return requiredRoles.some((role) => {
+      // Si la route exige un "MANAGER"
+      if (role === 'MANAGER') {
+        return user.isManager === true;
+      }
+
+      // Sinon vérification classique sur le rôle BDD (ex: EMPLOYE, ADMIN)
+      return user.role === role;
+    });
   }
 }

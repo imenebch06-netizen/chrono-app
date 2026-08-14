@@ -8,7 +8,7 @@ export class LoginDto {
   @IsNotEmpty({ message: "L'email est obligatoire." })
   email!: string;
 
-  @ApiProperty({ example: 'Password123!', description: 'Mot de passe' })
+  @ApiProperty({ example: 'password123', description: 'Mot de passe' })
   @IsString()
   @IsNotEmpty({ message: 'Le mot de passe est obligatoire.' })
   password!: string;

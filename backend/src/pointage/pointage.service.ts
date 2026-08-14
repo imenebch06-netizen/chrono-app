@@ -1,19 +1,26 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as XLSX from 'xlsx';
+import { CompteurService } from 'src/compteur/compteur.service';
 
 @Injectable()
 export class PointageService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService,
+              private readonly compteurService: CompteurService,
+  ) {}
 
-  /**
-   * Importation intelligente : Empêche les doublons, exclut les créneaux de récupération
-   * et ajuste le calcul des crédits/débits.
-   */
+  // =========================================================================
+  // 1. IMPORTATION EXCEL (AVEC TOUS LES CALCULS & COMPTEURS)
+  // =========================================================================
   async importerPointagesDepuisExcel(fileBuffer: Buffer) {
     const workbook = XLSX.read(fileBuffer, { type: 'buffer', cellDates: true });
     const sheetName = workbook.SheetNames[0];
     const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { raw: false });
+
+    const employesExistants = await this.prisma.employe.findMany({
+      select: { id: true },
+    });
+    const idsValides = new Set(employesExistants.map((e) => e.id));
 
     const resultats: any[] = [];
 
@@ -22,10 +29,19 @@ export class PointageService {
 
       if (!employeId || !date || !heureDebut) continue;
 
+      const empId = Number(employeId);
+      // 🛡️ VÉRIFICATION : Bloque proprement si l'employé n'existe pas
+      if (!idsValides.has(empId)) {
+        throw new BadRequestException(
+          `L'employé avec l'ID #${empId} indiqué dans le fichier Excel n'existe pas en base de données.`,
+        );
+      }
+      const datePointage = this.parseDateOnly(date);
+      if (!datePointage) continue;
       const start = this.parseDateTime(date, heureDebut);
       const end = heureFin ? this.parseDateTime(date, heureFin) : null;
 
-      if (!start || isNaN(start.getTime())) continue;
+      if (!start) continue;
 
       let dureeHeures: number | null = null;
       let creditDebitJour: number | null = null;
@@ -33,10 +49,10 @@ export class PointageService {
       if (end && !isNaN(end.getTime())) {
         const dureeBrute = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
 
-        // 1. 🛑 RECHERCHE DES ABSENCES / RÉCUPÉRATIONS VALIDÉES (qui chevauchent le pointage)
+        // A. Chevauchement avec absences/récupérations validées
         const absencesValides = await this.prisma.demandeAbsence.findMany({
           where: {
-            employeId: Number(employeId),
+            employeId: empId,
             status: 'VALIDE',
             dateDebut: { lte: end },
             dateFin: { gte: start },
@@ -50,12 +66,10 @@ export class PointageService {
           const startAbs = new Date(abs.dateDebut);
           const endAbs = new Date(abs.dateFin);
 
-          // Durée accordée pour l'absence/récupération
           const dureeAbs =
             abs.heures_a_recuperer || (endAbs.getTime() - startAbs.getTime()) / (1000 * 60 * 60);
           heuresAbsenceTotal += dureeAbs;
 
-          // Calcul du chevauchement exact entre la plage pointée [start, end] et l'absence [startAbs, endAbs]
           const overlapStart = new Date(Math.max(start.getTime(), startAbs.getTime()));
           const overlapEnd = new Date(Math.min(end.getTime(), endAbs.getTime()));
 
@@ -65,13 +79,13 @@ export class PointageService {
           }
         }
 
-        // 2. Durée réellement travaillée (brute moins les heures de récupération pointées)
+        // B. Durée réellement travaillée
         dureeHeures = Number(Math.max(0, dureeBrute - heuresChevauchement).toFixed(2));
 
-        // 3. Recherche de la durée théorique standard (Planning ou Week-end)
+        // C. Durée théorique selon le planning
         const planning = await this.prisma.planning.findFirst({
           where: {
-            employeId: Number(employeId),
+            employeId: empId,
             dateDebut: { lte: start },
             dateFin: { gte: start },
           },
@@ -94,20 +108,18 @@ export class PointageService {
           dureeTheoriqueBase = jourSemaine === 5 || jourSemaine === 6 ? 0.0 : 8.0;
         }
 
-        // 4. Durée théorique due (Théorique standard moins les heures de récupération accordées)
+        // D. Calcul du crédit/débit ajusté
         const dureeTheoriqueAjustee = Math.max(0, dureeTheoriqueBase - heuresAbsenceTotal);
-
-        // 5. Solde Crédit / Débit final
         creditDebitJour = Number((dureeHeures - dureeTheoriqueAjustee).toFixed(2));
       }
 
-      // 🛑 VÉRIFICATION ANTI-DOUBLONS : Recherche si un pointage existe déjà ce jour-là
+      // E. Sauvegarde / Mise à jour (Anti-doublons jour)
       const startOfDay = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0);
       const endOfDay = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 23, 59, 59);
 
       const existingPointage = await this.prisma.pointage.findFirst({
         where: {
-          employeId: Number(employeId),
+          employeId: empId,
           date: { gte: startOfDay, lte: endOfDay },
         },
       });
@@ -116,176 +128,52 @@ export class PointageService {
       let diffCredit = creditDebitJour || 0;
 
       if (existingPointage) {
-        const oldCredit = existingPointage.creditDebit || 0;
-        diffCredit = (creditDebitJour || 0) - oldCredit;
-
+        diffCredit = (creditDebitJour || 0) - (existingPointage.creditDebit || 0);
         pointage = await this.prisma.pointage.update({
           where: { id: existingPointage.id },
           data: {
             heureDebut: start,
             heureFin: end,
-            dureeHeures: dureeHeures,
+            dureeHeures,
             creditDebit: creditDebitJour,
           },
         });
       } else {
         pointage = await this.prisma.pointage.create({
           data: {
-            date: startOfDay,
+            date: datePointage,
             heureDebut: start,
             heureFin: end,
-            dureeHeures: dureeHeures,
+            dureeHeures,
             creditDebit: creditDebitJour,
-            employeId: Number(employeId),
+            employeId: empId,
           },
         });
       }
 
-      // Mise à jour du compteur
+      // F. Mise à jour du compteur global RTT / Crédit-Débit
       if (diffCredit !== 0) {
-        await this.prisma.compteur.upsert({
-          where: { employeId: Number(employeId) },
-          update: {
-            solde_rtt: { increment: diffCredit },
-            credit_debit: { increment: diffCredit },
-          },
-          create: {
-            employeId: Number(employeId),
-            solde_conges: 0.0,
-            solde_rtt: diffCredit,
-            credit_debit: diffCredit,
-          },
-        });
+       await this.compteurService.ajusterCreditDebit(empId, diffCredit);
       }
 
       resultats.push(pointage);
     }
 
     return {
-      message: `${resultats.length} pointage(s) traité(s) sans doublons.`,
+      message: `${resultats.length} pointage(s) traité(s) avec succès.`,
       pointages: resultats,
     };
   }
 
-  /**
-   * Récupère la vue calendrier / semaine d'un employé (sans doublons)
-   */
-async getSemaineEmploye(employeId: number, dateDebutStr: string) {
-  if (!dateDebutStr) {
-    throw new BadRequestException('Le paramètre dateDebut est requis.');
-  }
-
-  const debut = new Date(dateDebutStr);
-  const fin = new Date(debut);
-  fin.setDate(fin.getDate() + 7);
-
-  // 1. Récupérer les pointages
-  const rawPointages = await this.prisma.pointage.findMany({
-    where: {
-      employeId,
-      date: { gte: debut, lt: fin },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
-
-  const uniquePointagesMap = new Map<string, (typeof rawPointages)[0]>();
-  for (const p of rawPointages) {
-    const dateKey = p.date.toISOString().split('T')[0];
-    if (!uniquePointagesMap.has(dateKey)) {
-      uniquePointagesMap.set(dateKey, p);
-    }
-  }
-  let pointages = Array.from(uniquePointagesMap.values()).sort(
-    (a, b) => a.date.getTime() - b.date.getTime(),
-  );
-
-  // 2. Récupérer le planning sur la période
-  const plannings = await this.prisma.planning.findMany({
-    where: { employeId, dateDebut: { lte: fin }, dateFin: { gte: debut } },
-  });
-
-  // 3. Générer toutes les dates de la semaine
-  const joursSemaine: Date[] = [];
-  for (let d = new Date(debut); d < fin; d.setDate(d.getDate() + 1)) {
-    joursSemaine.push(new Date(d));
-  }
-
-  // 4. Compléter les jours sans pointage
-  for (const jour of joursSemaine) {
-    const dateKey = jour.toISOString().split('T')[0];
-    const existe = pointages.find(p => p.date.toISOString().split('T')[0] === dateKey);
-
-    if (!existe) {
-      // Vérifier si le jour est prévu dans le planning
-      const planningJour = plannings.find(pl => jour >= pl.dateDebut && jour <= pl.dateFin);
-      if (planningJour) {
-        // Calculer les heures prévues à partir de heureDebut et heureFin
-        let heuresPrevues = 0;
-        if (planningJour.heureDebut && planningJour.heureFin) {
-          const [hDebut, mDebut] = planningJour.heureDebut.split(':').map(Number);
-          const [hFin, mFin] = planningJour.heureFin.split(':').map(Number);
-          heuresPrevues = (hFin + mFin / 60) - (hDebut + mDebut / 60);
-        }
-        // Ajouter un faux pointage avec débit négatif
-        pointages.push({
-          id: -1, // id fictif
-          employeId,
-          date: jour,
-          creditDebit: -(heuresPrevues || 0),
-          createdAt: new Date(),
-        } as any);
-      }
-    }
-  }
-
-  // 5. Re-trier après ajout
-  pointages = pointages.sort((a, b) => a.date.getTime() - b.date.getTime());
-
-  // 6. Calcul du total
-  const totalCreditSemaine = pointages.reduce((acc, p) => acc + (p.creditDebit || 0), 0);
-
-  const compteur = await this.prisma.compteur.findUnique({ where: { employeId } });
-
-  return {
-    employeId,
-    periode: {
-      du: debut.toISOString().split('T')[0],
-      au: fin.toISOString().split('T')[0],
-    },
-    totalCreditSemaine: Number(totalCreditSemaine.toFixed(2)),
-    pointages,
-    compteurGlobal: compteur ?? {
-      solde_conges: 0.0,
-      solde_rtt: 0.0,
-      credit_debit: 0.0,
-    },
-  };
-}
-
-
-  /**
-   * Récupère les employés ayant pointé pour une date donnée (ex: YYYY-MM-DD)
-   */
-  async getEmployesByDate(dateStr: string) {
-    if (!dateStr) {
-      throw new BadRequestException('Le paramètre "date" est obligatoire (format YYYY-MM-DD).');
-    }
-
-    const parts = dateStr.split('T')[0].split('-').map(Number);
-    if (parts.length !== 3 || parts.some(isNaN)) {
-      throw new BadRequestException('Format de date invalide. Utilisez YYYY-MM-DD.');
-    }
-
-    const [year, month, day] = parts;
-    const startOfDay = new Date(year, month - 1, day, 0, 0, 0, 0);
-    const endOfDay = new Date(year, month - 1, day, 23, 59, 59, 999);
+  // =========================================================================
+  // 2. RECUPERER LES POINTAGES D'UNE DATE PRÉCISE (POUR TOUS LES EMPLOYÉS)
+  // =========================================================================
+  async getPointagesParDate(dateStr: string) {
+    const { startOfDay, endOfDay } = this.parseYMD(dateStr);
 
     const pointages = await this.prisma.pointage.findMany({
       where: {
-        heureDebut: {
-          gte: startOfDay,
-          lte: endOfDay,
-        },
+        date: { gte: startOfDay, lte: endOfDay },
       },
       include: {
         employe: {
@@ -297,20 +185,114 @@ async getSemaineEmploye(employeId: number, dateDebutStr: string) {
 
     return {
       date: dateStr,
-      totalEmployesPointe: pointages.length,
+      total: pointages.length,
       pointages,
     };
   }
 
-  /**
-   * Parseur universel et dynamique de dates/heures
-   */
+  // =========================================================================
+  // 3. RECUPERER LES POINTAGES D'UN EMPLOYÉ PAR PLAGE (SEMAINE)
+  // =========================================================================
+  async getSemaineEmploye(employeId: number, dateDebutStr: string) {
+    if (!dateDebutStr) {
+      throw new BadRequestException('Le paramètre dateDebut est requis (YYYY-MM-DD).');
+    }
+
+    const debut = new Date(dateDebutStr);
+    const fin = new Date(debut);
+    fin.setDate(fin.getDate() + 7);
+
+    // Pointages enregistrés dans la DB sur la période
+    const rawPointages = await this.prisma.pointage.findMany({
+      where: { employeId, date: { gte: debut, lt: fin } },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Dédoublonnage au cas où
+    const uniqueMap = new Map<string, (typeof rawPointages)[0]>();
+    for (const p of rawPointages) {
+      const dateKey = p.date.toISOString().split('T')[0];
+      if (!uniqueMap.has(dateKey)) uniqueMap.set(dateKey, p);
+    }
+
+    let pointages = Array.from(uniqueMap.values());
+
+    // Récupérer le planning pour détecter les jours non pointés
+    const plannings = await this.prisma.planning.findMany({
+      where: { employeId, dateDebut: { lte: fin }, dateFin: { gte: debut } },
+    });
+
+    // Compléter la semaine jour par jour
+    for (let d = new Date(debut); d < fin; d.setDate(d.getDate() + 1)) {
+      const dateKey = d.toISOString().split('T')[0];
+      const existe = pointages.some((p) => p.date.toISOString().split('T')[0] === dateKey);
+
+      if (!existe) {
+        const planningJour = plannings.find((pl) => d >= pl.dateDebut && d <= pl.dateFin);
+        if (planningJour && planningJour.type_travail !== 'REPOS') {
+          let heuresPrevues = 8.0;
+          if (planningJour.heureDebut && planningJour.heureFin) {
+            const [hDebut, mDebut] = planningJour.heureDebut.split(':').map(Number);
+            const [hFin, mFin] = planningJour.heureFin.split(':').map(Number);
+            heuresPrevues = hFin + mFin / 60 - (hDebut + mDebut / 60);
+          }
+
+          // Journée non pointée = Débit négatif des heures prévues
+          pointages.push({
+            id: -1,
+            employeId,
+            date: new Date(d),
+            dureeHeures: 0,
+            creditDebit: -heuresPrevues,
+            createdAt: new Date(),
+          } as any);
+        }
+      }
+    }
+
+    // Tri chronologique
+    pointages.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    const totalCreditSemaine = pointages.reduce((acc, p) => acc + (p.creditDebit || 0), 0);
+    const compteur = await this.prisma.compteur.findUnique({ where: { employeId } });
+
+    return {
+      employeId,
+      periode: {
+        du: debut.toISOString().split('T')[0],
+        au: fin.toISOString().split('T')[0],
+      },
+      totalCreditSemaine: Number(totalCreditSemaine.toFixed(2)),
+      pointages,
+      compteurGlobal: compteur ?? { solde_conges: 0.0, solde_rtt: 0.0, credit_debit: 0.0 },
+    };
+  }
+
+  // =========================================================================
+  // 🛠️ HELPERS PRIVÉS
+  // =========================================================================
+
+  private parseYMD(dateStr: string) {
+    if (!dateStr) {
+      throw new BadRequestException('Le paramètre "date" est obligatoire (YYYY-MM-DD).');
+    }
+
+    const parts = dateStr.split('T')[0].split('-').map(Number);
+    if (parts.length !== 3 || parts.some(isNaN)) {
+      throw new BadRequestException('Format de date invalide. Utilisez YYYY-MM-DD.');
+    }
+
+    const [year, month, day] = parts;
+    return {
+      startOfDay: new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0)),
+      endOfDay: new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999)),
+    };
+  }
+
   private parseDateTime(dateVal: any, timeVal: any): Date | null {
     if (!dateVal || !timeVal) return null;
 
-    let year = 2026,
-      month = 7,
-      day = 1;
+    let year: number, month: number, day: number;
 
     if (dateVal instanceof Date && !isNaN(dateVal.getTime())) {
       year = dateVal.getFullYear();
@@ -318,36 +300,24 @@ async getSemaineEmploye(employeId: number, dateDebutStr: string) {
       day = dateVal.getDate();
     } else {
       const dateStr = String(dateVal).trim();
-
       if (dateStr.includes('-')) {
         const parts = dateStr.split('T')[0].split('-').map(Number);
-        if (parts[0] > 1000) {
-          [year, month, day] = [parts[0], parts[1] - 1, parts[2]];
-        } else {
-          [year, month, day] = [parts[2], parts[1] - 1, parts[0]];
-        }
+        if (parts.length < 3) return null;
+        [year, month, day] = parts[0] > 1000 ? [parts[0], parts[1] - 1, parts[2]] : [parts[2], parts[1] - 1, parts[0]];
       } else if (dateStr.includes('/')) {
         const parts = dateStr.split('/');
-        if (parts[0].length === 4) {
-          [year, month, day] = [Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])];
-        } else {
-          const moisExcel = Number(parts[0]);
-          const jourExcel = Number(parts[1]);
-          const anneeExcel = Number(parts[2]);
-
-          [year, month, day] = [anneeExcel, moisExcel - 1, jourExcel];
-        }
+        if (parts.length < 3) return null;
+        [year, month, day] = parts[0].length === 4 
+          ? [Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])]
+          : [Number(parts[2]), Number(parts[0]) - 1, Number(parts[1])];
+      } else {
+        return null;
       }
     }
 
-    if (year < 100) {
-      year = 2000 + year;
-    } else if (year >= 1900 && year < 2000) {
-      year = year + 100;
-    }
+    if (year < 100) year += 2000;
 
-    let hours = 0,
-      minutes = 0;
+    let hours = 0, minutes = 0;
     if (timeVal instanceof Date && !isNaN(timeVal.getTime())) {
       hours = timeVal.getHours();
       minutes = timeVal.getMinutes();
@@ -360,117 +330,121 @@ async getSemaineEmploye(employeId: number, dateDebutStr: string) {
       }
     }
 
-    const result = new Date(year, month, day, hours, minutes, 0);
-    result.setFullYear(year);
-
+    const result = new Date(Date.UTC(year, month, day, hours, minutes, 0));
     return isNaN(result.getTime()) ? null : result;
   }
 
-  /**
-   * Synthèse complète d'une journée
-   */
-  async getTableauDeBordJournee(dateStr: string) {
-    if (!dateStr) {
-      throw new BadRequestException('Le paramètre "date" est obligatoire (ex: YYYY-MM-DD).');
-    }
 
-    const parts = dateStr.split('T')[0].split('-').map(Number);
-    const startOfDay = new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0);
-    const endOfDay = new Date(parts[0], parts[1] - 1, parts[2], 23, 59, 59, 999);
+  private parseDateOnly(dateVal: any): Date | null {
+    if (!dateVal) return null;
 
-    const targetDate = new Date(parts[0], parts[1] - 1, parts[2], 12, 0, 0);
-    const jourSemaine = targetDate.getDay();
+    let year: number, month: number, day: number;
 
-    const employes = await this.prisma.employe.findMany({
-      select: { id: true, nom: true, prenom: true, email: true },
-    });
-
-    const pointages = await this.prisma.pointage.findMany({
-      where: { date: { gte: startOfDay, lte: endOfDay } },
-    });
-
-    const absences = await this.prisma.demandeAbsence.findMany({
-      where: {
-        status: 'VALIDE',
-        dateDebut: { lte: endOfDay },
-        dateFin: { gte: startOfDay },
-      },
-    });
-
-    const plannings = await this.prisma.planning.findMany({
-      where: {
-        dateDebut: { lte: endOfDay },
-        dateFin: { gte: startOfDay },
-      },
-    });
-
-    const presents: Array<(typeof employes)[number] & { pointage: (typeof pointages)[number] }> =
-      [];
-    const enConges: Array<(typeof employes)[number] & { absence: (typeof absences)[number] }> = [];
-    const enRecuperation: Array<
-      (typeof employes)[number] & { absence: (typeof absences)[number] }
-    > = [];
-    const autresAbsences: Array<
-      (typeof employes)[number] & { absence: (typeof absences)[number] }
-    > = [];
-    const enRepos: Array<(typeof employes)[number] & { motif: string }> = [];
-    const absentsInjustifies: Array<(typeof employes)[number]> = [];
-
-    for (const emp of employes) {
-      const pointage = pointages.find((pt) => pt.employeId === emp.id);
-      const absence = absences.find((ab) => ab.employeId === emp.id);
-      const planning = plannings.find((pl) => pl.employeId === emp.id);
-
-      if (pointage) {
-        presents.push({ ...emp, pointage });
-      } else if (absence) {
-        const typeAbsence = String(absence.typeDemande || '').toUpperCase();
-
-        if (typeAbsence === 'RECUPERATION' || typeAbsence === 'RTT') {
-          enRecuperation.push({ ...emp, absence });
-        } else if (typeAbsence === 'CONGE_PAYE' || typeAbsence === 'CONGE') {
-          enConges.push({ ...emp, absence });
-        } else {
-          autresAbsences.push({ ...emp, absence });
-        }
+    if (dateVal instanceof Date && !isNaN(dateVal.getTime())) {
+      // Extraction des composants locaux d'Excel
+      year = dateVal.getFullYear();
+      month = dateVal.getMonth();
+      day = dateVal.getDate();
+    } else {
+      const dateStr = String(dateVal).trim();
+      if (dateStr.includes('-')) {
+        const parts = dateStr.split('T')[0].split('-').map(Number);
+        if (parts.length < 3) return null;
+        [year, month, day] = parts[0] > 1000 ? [parts[0], parts[1] - 1, parts[2]] : [parts[2], parts[1] - 1, parts[0]];
+      } else if (dateStr.includes('/')) {
+        const parts = dateStr.split('/');
+        if (parts.length < 3) return null;
+        [year, month, day] = parts[0].length === 4 
+          ? [Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])]
+          : [Number(parts[2]), Number(parts[0]) - 1, Number(parts[1])];
       } else {
-        const planningData = planning as any;
-        const joursReposEmp =
-          typeof planningData?.joursRepos === 'string'
-            ? planningData.joursRepos.split(',').map(Number)
-            : [5, 6];
-        const estEnRepos =
-          joursReposEmp.includes(jourSemaine) || planning?.type_travail === 'REPOS';
-
-        if (estEnRepos) {
-          enRepos.push({ ...emp, motif: 'Repos Hebdomadaire (Planning)' });
-        } else {
-          absentsInjustifies.push(emp);
-        }
+        return null;
       }
     }
 
+    if (year < 100) year += 2000;
+
+    // 💡 Force l'heure à 00:00:00 UTC pour la date du jour
+    return new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+  }
+
+ // =========================================================================
+// 🔑 HELPER PRIVÉ : Récupère les IDs de tous les employés gérés par un Chef
+// =========================================================================
+private async getEmployeIdsSousChef(chefId: number): Promise<number[]> {
+  // 1. Trouver toutes les organisations dont cet utilisateur est le Chef
+  const managedOrgs = await this.prisma.organization.findMany({
+    where: { managerId: chefId },
+    select: { path: true },
+  });
+
+  // 2. Extraire et filtrer strictement les 'path' non nuls (Type Guard TypeScript)
+  const validPaths = managedOrgs
+    .map((org) => org.path)
+    .filter((path): path is string => Boolean(path));
+
+  // Si le chef n'a aucune organisation ou aucun path valide
+  if (validPaths.length === 0) {
+    return [];
+  }
+
+  // 3. Récupérer les employés rattachés à la branche (avec des strings garanties)
+  const subordinates = await this.prisma.employe.findMany({
+    where: {
+      OR: validPaths.map((path) => ({
+        organization: {
+          path: { startsWith: path }, // 'path' est maintenant un strict string !
+        },
+      })),
+    },
+    select: { id: true },
+  });
+
+  return subordinates.map((emp) => emp.id);
+}
+// =========================================================================
+// 📌 POINTAGES DE L'ÉQUIPE DU CHEF POUR UNE DATE DONNÉE
+// =========================================================================
+async getPointagesEquipeParChef(chefId: number, dateStr: string) {
+  const { startOfDay, endOfDay } = this.parseYMD(dateStr);
+
+  // Récupération dynamique de la liste des employés de la branche
+  const employeIds = await this.getEmployeIdsSousChef(chefId);
+
+  if (employeIds.length === 0) {
     return {
+      chefId,
       date: dateStr,
-      statistiques: {
-        totalEmployes: employes.length,
-        totalPresents: presents.length,
-        totalConges: enConges.length,
-        totalRecuperation: enRecuperation.length,
-        totalAutresAbsences: autresAbsences.length,
-        totalEnRepos: enRepos.length,
-        totalAbsentsInjustifies: absentsInjustifies.length,
-      },
-      presents,
-      enConges,
-      enRecuperation,
-      autresAbsences,
-      enRepos,
-      absentsInjustifies,
+      total: 0,
+      pointages: [],
     };
   }
 
-  async deleteAllPointages() {
-    await this.prisma.pointage.deleteMany({});
-  }
+  // Récupération des pointages filtrés
+  const pointages = await this.prisma.pointage.findMany({
+    where: {
+      employeId: { in: employeIds },
+      date: { gte: startOfDay, lte: endOfDay },
+    },
+    include: {
+      employe: {
+        select: {
+          id: true,
+          nom: true,
+          prenom: true,
+          email: true,
+          organization: { select: { id: true, nom: true } },
+        },
+      },
+    },
+    orderBy: { heureDebut: 'asc' },
+  });
+
+  return {
+    chefId,
+    date: dateStr,
+    total: pointages.length,
+    pointages,
+  };
+}
 }

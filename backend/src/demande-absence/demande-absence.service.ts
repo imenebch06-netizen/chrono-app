@@ -1,3 +1,4 @@
+
 import {
   Injectable,
   NotFoundException,
@@ -9,76 +10,250 @@ import { UploadService } from '../upload/upload.service';
 import { CreateDemandeAbsenceDto, TypeDemande } from './dto/create-demande-absence.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { Role } from '../auth/enums/role.enum';
+import { CompteurService } from 'src/compteur/compteur.service';
 
 @Injectable()
 export class DemandeAbsenceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly uploadService: UploadService,
+    private readonly compteurService: CompteurService,
   ) {}
 
-  async create(dto: CreateDemandeAbsenceDto, user: any, file?: Express.Multer.File) {
-    // 1. Récupération sécurisée de l'ID utilisateur (compatible `user.id` et `user.sub`)
-    const currentUserId = user?.id ?? user?.sub;
 
-    // 2. Détermination de l'employeId cible
-    const rawEmployeId = user?.role === Role.ADMIN && dto.employeId ? dto.employeId : currentUserId;
+  // =========================================================================
+  // 🔍 HELPER PRIVÉ : Remontée de l'arbre pour trouver le 1er Manager disponible
+  // =========================================================================
+  private async findManagerInHierarchy(orgId: number | null, requestingEmployeId: number): Promise<number | null> {
+    let currentOrgId = orgId;
 
-    const targetEmployeId = Number(rawEmployeId);
+    while (currentOrgId) {
+      const org = await this.prisma.organization.findUnique({
+        where: { id: currentOrgId },
+        select: { id: true, managerId: true, idOrganizationSup: true },
+      });
 
-    // 3. Vérification de la validité de l'ID
-    if (!targetEmployeId || isNaN(targetEmployeId)) {
-      throw new BadRequestException(
-        "Impossible d'identifier l'employé pour cette demande. Vérifiez l'ID de l'utilisateur.",
-      );
+      if (!org) break;
+
+      // Si l'organisation possède un manager ET que ce n'est pas le demandeur lui-même
+      if (org.managerId && org.managerId !== requestingEmployeId) {
+        return org.managerId;
+      }
+
+      // Remontée vers l'organisation parente (ancêtre)
+      currentOrgId = org.idOrganizationSup;
     }
 
-    // 4. Vérification de l'existence de l'employé en BDD
-    const employe = await this.prisma.employe.findUnique({
-      where: { id: targetEmployeId },
-    });
-
-    if (!employe) {
-      throw new NotFoundException(`L'employé avec l'ID ${targetEmployeId} n'existe pas.`);
-    }
-
-    // 5. Règles métiers selon le type de demande
-    if (dto.typeDemande === TypeDemande.CONGE && !dto.type_conge) {
-      throw new BadRequestException("Le champ 'type_conge' est requis pour un CONGE.");
-    }
-    if (dto.typeDemande === TypeDemande.RECUPERATION && dto.heures_a_recuperer === undefined) {
-      throw new BadRequestException(
-        "Le champ 'heures_a_recuperer' est requis pour une RECUPERATION.",
-      );
-    }
-
-    // 6. Téléversement Cloudinary si un justificatif est fourni
-    let justificatifUrl: string | null = null;
-    if (file) {
-      const uploadResult = await this.uploadService.uploadImage(file);
-      justificatifUrl = uploadResult.secure_url;
-    }
-
-    // 7. Enregistrement en BDD
-    return this.prisma.demandeAbsence.create({
-      data: {
-        typeDemande: dto.typeDemande,
-        dateDebut: new Date(dto.dateDebut),
-        dateFin: new Date(dto.dateFin),
-        motif: dto.motif,
-        justificatif: justificatifUrl,
-        type_conge: dto.type_conge,
-        justifie: dto.justifie ?? (file ? true : false),
-        heures_a_recuperer: dto.heures_a_recuperer ? Number(dto.heures_a_recuperer) : null,
-        employeId: targetEmployeId,
-      },
-      include: {
-        employe: {
-          select: { id: true, nom: true, prenom: true, email: true },
-        },
-      },
-    });
+    return null; // Aucun manager trouvé dans toute la hiérarchie ascendante
   }
+async create(dto: CreateDemandeAbsenceDto, user: any, file?: Express.Multer.File) {
+  // 1. Récupération de l'employé et de son organisation
+  const currentUserId = user?.id ?? user?.sub;
+  const rawEmployeId = user?.role === Role.ADMIN && dto.employeId ? dto.employeId : currentUserId;
+  const targetEmployeId = Number(rawEmployeId);
+
+  if (!targetEmployeId || isNaN(targetEmployeId)) {
+    throw new BadRequestException("Impossible d'identifier l'employé pour cette demande.");
+  }
+
+  const employe = await this.prisma.employe.findUnique({
+    where: { id: targetEmployeId },
+    include: { organization: true },
+  });
+
+  if (!employe) {
+    throw new NotFoundException(`L'employé avec l'ID ${targetEmployeId} n'existe pas.`);
+  }
+
+   // 🆕 1.bis RÉCUPÉRATION DU COMPTEUR
+    const compteur = await this.compteurService.getByEmploye(targetEmployeId);
+
+   // 2. Normalisation des dates au jour J (00:00:00) pour la comparaison
+  const rawDateDebut = new Date(dto.dateDebut);
+  const rawDateFin = dto.typeDemande === TypeDemande.RECUPERATION 
+      ? new Date(dto.dateDebut) 
+      : new Date(dto.dateFin);
+
+  const startDayOnly = new Date(rawDateDebut);
+  startDayOnly.setHours(0, 0, 0, 0);
+
+  const endDayOnly = new Date(rawDateFin);
+  endDayOnly.setHours(0, 0, 0, 0);
+
+  const aujourdhui = new Date();
+  aujourdhui.setHours(0, 0, 0, 0);
+
+  const demain = new Date(aujourdhui);
+  demain.setDate(demain.getDate() + 1);
+
+  if (startDayOnly < demain) {
+    throw new BadRequestException("La demande doit être faite au moins 24h à l'avance.");
+  }
+  if (endDayOnly < startDayOnly) {
+    throw new BadRequestException("La date de fin ne peut pas être antérieure à la date de début.");
+  }
+
+ 
+
+    // 🆕 2. CONTRÔLES MÉTIER POUR LA RÉCUPÉRATION
+    if (dto.typeDemande === TypeDemande.RECUPERATION) {
+      // Pour une récupération, dateFin est égale à dateDebut
+      dto.dateFin = dto.dateDebut;
+
+      const hrs = Number(dto.heures_a_recuperer);
+      if (!hrs || hrs <= 0) {
+        throw new BadRequestException("Veuillez spécifier un nombre d'heures à récupérer valide (supérieur à 0).");
+      }
+
+      if (hrs > 8) {
+        throw new BadRequestException("Le nombre d'heures à récupérer ne peut pas dépasser la journée théorique de 8 heures.");
+      }
+
+      if (compteur.solde_rtt < hrs) {
+        throw new BadRequestException(
+          `Solde RTT insuffisant (${compteur.solde_rtt} h disponible(s), ${hrs} h demandée(s)).`
+        );
+      }
+    }
+    if (dto.typeDemande === TypeDemande.CONGE) {
+      // Calcul du nombre de jours calendaires (inclusif)
+      const diffTime = endDayOnly.getTime() - startDayOnly.getTime();
+      const nbJours = Math.floor(diffTime / (1000 * 3600 * 24)) + 1;
+
+      if (compteur.solde_conges <= 0) {
+        throw new BadRequestException("Votre solde de congés payés est épuisé (0 jour disponible).");
+      }
+      if (compteur.solde_conges < nbJours) {
+        throw new BadRequestException(
+          `Solde de congés insuffisant (${compteur.solde_conges} jour(s) disponible(s), ${nbJours} jour(s) demandé(s)).`
+        );
+      }
+    }
+
+    // 5. 🚫 CONTRAINTE STRICTE : AUCUN CHEVAUCHEMENT DE DEMANDES
+    const chevauchement = await this.prisma.demandeAbsence.findFirst({
+      where: {
+        employeId: targetEmployeId,
+        status: { in: ['EN_ATTENTE', 'VALIDE'] },
+        // Intersect : début_existant <= fin_nouvelle ET fin_existante >= début_nouveau
+        dateDebut: { lte: endDayOnly },
+        dateFin: { gte: startDayOnly },
+      },
+    });
+
+    if (chevauchement) {
+      throw new BadRequestException(
+        "Une demande (en attente ou validée) existe déjà pour cette date ou cette période."
+      );
+    }
+ 
+
+  // 3. 🚫 CONTRAINTE STRICTE : Si AUCUN planning trouvé -> On lève une erreur HTTP 400
+  const planning = await this.prisma.planning.findFirst({
+    where: {
+      AND: [
+        { dateDebut: { lte: rawDateDebut } },
+        { dateFin: { gte: rawDateFin } },
+        {
+          OR: [
+            { employeId: targetEmployeId },
+          ],
+        },
+      ],
+    },
+    orderBy: [{ employeId: 'desc' }], // Priorité au planning individuel
+  });
+
+  if (!planning) {
+    throw new BadRequestException(
+      "Impossible d'effectuer la demande : Vous ne possédez aucun planning attribué pour cette période."
+    );
+  }
+
+  if (!planning.heureDebut || !planning.heureFin) {
+    throw new BadRequestException(
+      "Le planning sélectionné n'a pas d'heures définies. Veuillez contacter le service RH."
+    );
+  }
+
+  // 4. ⏰ SYNCHRONISATION DES HEURES DU PLANNING (UTC Strict sans décalage timezone)
+  
+ // 4. ⏰ SYNCHRONISATION DES HEURES DU PLANNING (Infaillible)
+  
+  // 💡 ASTUCE : On découpe DIRECTEMENT le string du DTO sans utiliser new Date()
+  // Cela empêche JavaScript d'appliquer le moindre décalage horaire préalable.
+  const dateDebutStr = String(dto.dateDebut).split('T')[0]; // Résultat garanti : "YYYY-MM-DD"
+  const dateFinStr = String(dto.dateFin).split('T')[0];     // Résultat garanti : "YYYY-MM-DD"
+
+  const heureDebut = planning.heureDebut; // Ex: "08:00"
+  const heureFin = planning.heureFin;     // Ex: "16:00"
+
+  // Assemblage ISO strict en UTC
+  const synchronizedDateDebut = new Date(`${dateDebutStr}T${heureDebut}:00.000Z`);
+  let synchronizedDateFin = new Date(`${dateFinStr}T${heureFin}:00.000Z`);
+
+  // Shift de nuit (ex: 22h00 -> 06h00 le lendemain)
+  const [startHours] = heureDebut.split(':').map(Number);
+  const [endHours] = heureFin.split(':').map(Number);
+
+  if (startHours >= endHours && dateDebutStr === dateFinStr) {
+    // La fin du shift glisse automatiquement au lendemain (+1 jour UTC)
+    synchronizedDateFin.setUTCDate(synchronizedDateFin.getUTCDate() + 1);
+  }
+
+  // 5. Règles métiers
+  if (dto.typeDemande === TypeDemande.CONGE && !dto.type_conge) {
+    throw new BadRequestException("Le champ 'type_conge' est requis pour un CONGE.");
+  }
+  if (dto.typeDemande === TypeDemande.RECUPERATION && dto.heures_a_recuperer === undefined) {
+    throw new BadRequestException("Le champ 'heures_a_recuperer' est requis pour une RECUPERATION.");
+  }
+
+  // 6. Upload du justificatif
+  let justificatifUrl: string | null = null;
+  if (file) {
+    const uploadResult = await this.uploadService.uploadImage(file);
+    justificatifUrl = uploadResult.secure_url;
+  }
+
+  // 7. Création de la demande synchronisée avec le planning
+  const newDemande = await this.prisma.demandeAbsence.create({
+    data: {
+      typeDemande: dto.typeDemande,
+      dateDebut: synchronizedDateDebut,
+      dateFin: synchronizedDateFin,
+      motif: dto.motif,
+      justificatif: justificatifUrl,
+      type_conge: dto.type_conge,
+      justifie: dto.justifie ?? (file ? true : false),
+      heures_a_recuperer: dto.heures_a_recuperer ? Number(dto.heures_a_recuperer) : null,
+      employeId: targetEmployeId,
+      planningId: planning.id,
+    },
+    include: {
+      employe: { select: { id: true, nom: true, prenom: true, email: true } },
+      planning: true,
+    },
+  });
+
+  // 2. 🔔 NOTIFICATION : Recherche du Manager (Arbre hiérarchique)
+    const managerId = await this.findManagerInHierarchy(employe.organizationId, targetEmployeId);
+
+    if (managerId) {
+      await this.prisma.notification.create({
+        data: {
+          titre: "Nouvelle demande d'absence",
+          message: `${employe.prenom} ${employe.nom} a soumis une demande de ${dto.typeDemande}.`,
+          type: 'DEMANDE_CREEE',
+          employeId: managerId,
+          demandeId: newDemande.id,
+        },
+      });
+    }
+
+    return newDemande;
+
+}
   async findAll() {
     return this.prisma.demandeAbsence.findMany({
       include: { employe: { select: { id: true, nom: true, prenom: true } } },
@@ -93,111 +268,160 @@ export class DemandeAbsenceService {
       orderBy: { createdAt: 'desc' },
     });
   }
-
-  async findOne(id: number, user: any) {
-    const demande = await this.prisma.demandeAbsence.findUnique({
-      where: { id },
-      include: {
-        employe: {
-          select: { id: true, nom: true, prenom: true, serviceId: true, role: true },
+async findAllPending() {
+  return this.prisma.demandeAbsence.findMany({
+    where: { status: 'EN_ATTENTE' },
+    include: {
+      employe: {
+        select: {
+          id: true,
+          nom: true,
+          prenom: true,
+          email: true,
+          organization: { select: { id: true, nom: true } },
         },
       },
-    });
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+ async findOne(id: number, user: any) {
+  const userId = user?.id ?? user?.sub;
 
-    if (!demande) {
-      throw new NotFoundException(`Demande d'absence #${id} introuvable.`);
-    }
+  // 1. Récupération de la demande avec l'organisation de l'employé
+  const demande = await this.prisma.demandeAbsence.findUnique({
+    where: { id },
+    include: {
+      employe: {
+        select: {
+          id: true,
+          nom: true,
+          prenom: true,
+          email: true,
+          role: true,
+          organization: {
+            select: { id: true, nom: true, path: true },
+          },
+        },
+      },
+    },
+  });
 
-    // 🔒 Contrôle d'accès :
-    const isOwner = demande.employeId === user.id;
-    const isSameServiceManager =
-      user.role === Role.MANAGER && demande.employe.serviceId === user.serviceId;
-    const isAdmin = user.role === Role.ADMIN;
-
-    if (!isOwner && !isSameServiceManager && !isAdmin) {
-      throw new ForbiddenException("Vous n'avez pas l'autorisation d'accéder à cette demande.");
-    }
-
-    return demande;
+  if (!demande) {
+    throw new NotFoundException(`Demande d'absence #${id} introuvable.`);
   }
 
-  async updateStatus(id: number, dto: UpdateStatusDto, user: any) {
-    // 1. Récupération de la demande avec l'employé concerné
-    const demande = await this.prisma.demandeAbsence.findUnique({
-      where: { id },
-      include: { employe: true },
+  // 🔒 2. Contrôle d'accès
+  const isOwner = demande.employeId === userId;
+  const isAdmin = user?.role === Role.ADMIN;
+
+  // Vérification si l'utilisateur est le manager de cette branche hiérarchique
+  let isHierarchicalManager = false;
+  if (user?.isManager) {
+    const managedOrg = await this.prisma.organization.findFirst({
+      where: { managerId: userId },
     });
 
-    if (!demande) {
-      throw new NotFoundException(`Demande #${id} introuvable.`);
+   // 🔑 Extrait et sécurise les chemins
+    const employePath = demande.employe.organization?.path;
+    const managerPath = managedOrg?.path;
+
+    // S'assure que les deux chemins sont des strings non nulles
+    if (employePath && managerPath) {
+      isHierarchicalManager = employePath.startsWith(managerPath);
+    }
+  }
+
+  // Si l'utilisateur n'est ni le propriétaire, ni son manager hiérarchique, ni l'admin
+  if (!isOwner && !isHierarchicalManager && !isAdmin) {
+    throw new ForbiddenException("Vous n'avez pas l'autorisation d'accéder à cette demande.");
+  }
+
+  return demande;
+}
+
+ async updateStatus(id: number, dto: UpdateStatusDto, user: any) {
+  // 1. Récupérer la demande avec l'organisation de l'employé
+  const demande = await this.prisma.demandeAbsence.findUnique({
+    where: { id },
+    include: {
+      employe: {
+        include: { organization: true },
+      },
+    },
+  });
+
+  if (!demande) {
+    throw new NotFoundException(`Demande #${id} introuvable.`);
+  }
+
+  // 🔒 2. CONTRÔLE DE SÉCURITÉ
+
+  // Interdiction de valider/refuser sa propre demande
+  if (demande.employeId === user.id) {
+    throw new ForbiddenException('Vous ne pouvez pas valider ou refuser votre propre demande.');
+  }
+
+  // Si l'utilisateur n'est PAS ADMIN, on contrôle la responsabilité hiérarchique
+  if (user.role !== Role.ADMIN) {
+    // Récupérer l'organisation dont l'utilisateur courant est le responsable
+    const managedOrg = await this.prisma.organization.findFirst({
+      where: { managerId: user.id },
+    });
+
+    if (!managedOrg) {
+      throw new ForbiddenException("Vous n'êtes responsable d'aucune organisation.");
     }
 
-    // 🔒 2. CONTRÔLE DE SÉCURITÉ
+    // Vérifier si l'employé demandeur appartient à cette organisation ou à une sous-branche
+   const employePath = demande.employe.organization?.path;
+    const managerPath = managedOrg.path;
+    const isSubordinate =
+      Boolean(employePath) &&
+      Boolean(managerPath) &&
+      employePath!.startsWith(managerPath!);
 
-    // Interdiction de valider sa propre demande
-    if (demande.employeId === user.id) {
-      throw new ForbiddenException('Vous ne pouvez pas valider ou refuser votre propre demande.');
+    if (!isSubordinate) {
+      throw new ForbiddenException(
+        "Vous n'avez pas les droits sur cet employé (il n'est pas dans votre arbre hiérarchique).",
+      );
     }
+  }
 
-    // Règles pour le rôle MANAGER
-    if (user.role === Role.MANAGER) {
-      // CAS A : La demande appartient à un autre MANAGER (Validation entre pairs)
-      if (demande.employe.role === Role.MANAGER) {
-        // ✅ Autorisé
-      }
-      // CAS B : La demande appartient à un EMPLOYE simple
-      else {
-        const isSubordonneDirect = demande.employe.managerId === user.id;
-        const isMemeService = demande.employe.serviceId === user.serviceId;
-
-        // Si l'employé n'est ni son subordonné direct, ni dans son service : BLOQUER
-        if (!isSubordonneDirect && !isMemeService) {
-          throw new ForbiddenException(
-            "Vous n'avez pas les droits sur cet employé (ni subordonné direct, ni membre de votre service).",
-          );
-        }
-      }
-    }
-
-    // 3. Déduction du solde dans Compteur si la demande passe à VALIDE
+  // 3. DÉDUCTION DU SOLDE EN CAS DE VALIDATION
     if (dto.status === 'VALIDE' && demande.status !== 'VALIDE') {
-      const compteur = await this.prisma.compteur.findFirst({
-        where: { employeId: demande.employeId },
-      });
-
-      if (compteur) {
-        if (demande.typeDemande === TypeDemande.RECUPERATION) {
-          const heuresDeduites = demande.heures_a_recuperer || 0;
-          const nouveauSoldeRtt = Math.max(0, compteur.solde_rtt - heuresDeduites);
-
-          await this.prisma.compteur.update({
-            where: { id: compteur.id },
-            data: { solde_rtt: nouveauSoldeRtt },
-          });
-        } else if (
-          demande.typeDemande === TypeDemande.ABSENCE ||
-          demande.typeDemande === TypeDemande.CONGE
-        ) {
-          const debut = new Date(demande.dateDebut);
-          const fin = new Date(demande.dateFin);
-          const diffMs = Math.abs(fin.getTime() - debut.getTime());
-          const nbJours = Math.ceil(diffMs / (1000 * 60 * 60 * 24)) || 1;
-
-          const nouveauSoldeConges = Math.max(0, compteur.solde_conges - nbJours);
-
-          await this.prisma.compteur.update({
-            where: { id: compteur.id },
-            data: { solde_conges: nouveauSoldeConges },
-          });
-        }
+      if (demande.typeDemande === 'CONGE') {
+        // Calcul de la durée en jours
+        const diffMs = Math.abs(demande.dateFin.getTime() - demande.dateDebut.getTime());
+        const nbJours = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+        await this.compteurService.deduireConges(demande.employeId, nbJours);
+      } else if (demande.typeDemande === 'RECUPERATION') {
+        const nbHeures = demande.heures_a_recuperer || 0;
+        await this.compteurService.deduireRtt(demande.employeId, nbHeures);
       }
     }
 
-    // 4. Mise à jour du statut
-    return this.prisma.demandeAbsence.update({
+    // Mise à jour du statut
+    const updatedDemande = await this.prisma.demandeAbsence.update({
       where: { id },
       data: { status: dto.status },
     });
+
+    // 🔔 NOTIFICATION : Envoie le résultat à l'employé demandeur
+    const isValide = dto.status === 'VALIDE';
+    const statutTexte = isValide ? 'validée' : 'refusée';
+
+    await this.prisma.notification.create({
+      data: {
+        titre: isValide ? 'Demande Validée' : 'Demande Refusée',
+        message: `Votre demande de ${demande.typeDemande} a été ${statutTexte}.`,
+        type: isValide ? 'DEMANDE_VALIDEE' : 'DEMANDE_REFUSEE',
+        employeId: demande.employeId,
+        demandeId: demande.id,
+      },
+    });
+
+    return updatedDemande;
   }
 
   async remove(id: number) {
@@ -206,57 +430,43 @@ export class DemandeAbsenceService {
     return this.prisma.demandeAbsence.delete({ where: { id } });
   }
 
- async findByService(serviceId: number) {
-    // 1. Vérifier si le service existe
-    const serviceExists = await this.prisma.service.findUnique({
-      where: { id: serviceId },
-    });
+  async findPendingForManager(managerId: number) {
+  // 1. Trouver l'organisation gérée par ce manager
+  const managedOrg = await this.prisma.organization.findFirst({
+    where: { managerId },
+  });
 
-    if (!serviceExists) {
-      throw new NotFoundException(`Le service avec l'ID ${serviceId} n'existe pas.`);
-    }
+  if (!managedOrg || !managedOrg.path) {
+    return [];
+  }
 
-    // 2. Récupérer les demandes des employés appartenant à ce service
-    return this.prisma.demandeAbsence.findMany({
-      where: {
-        employe: {
-          serviceId: serviceId, // 🔑 Filtre Prisma à travers la relation Employe
-        },
-      },
-      include: {
-        employe: {
-          select: {
-            id: true,
-            nom: true,
-            prenom: true,
-            email: true,
-            role: true,
+  // 2. Récupérer les demandes en attente des employés dans son arbre hiérarchique
+  return this.prisma.demandeAbsence.findMany({
+    where: {
+      status: 'EN_ATTENTE',
+      employeId: { not: managerId }, // Exclure ses propres demandes
+      employe: {
+        organization: {
+          path: {
+            startsWith: managedOrg.path, // 🔑 Tous les subordonnés directs et indirects
           },
         },
       },
-      orderBy: {
-        createdAt: 'desc', // Affiche les demandes les plus récentes en premier
-      },
-    });
-  }
-
-  async findDemandesManagers() {
-    return this.prisma.demandeAbsence.findMany({
-      where: { employe: { role: Role.MANAGER } },
-      include: {
-        employe: {
-          select: {
-            id: true,
-            nom: true,
-            prenom: true,
-            email: true,
-            service: { select: { id: true, nom_service: true } },
-          },
+    },
+    include: {
+      employe: {
+        select: {
+          id: true,
+          nom: true,
+          prenom: true,
+          email: true,
+          organization: { select: { id: true, nom: true } },
         },
       },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+}
 
   async cancelOwnDemande(demandeId: number, employeId: number) {
   const demande = await this.prisma.demandeAbsence.findUnique({
@@ -281,54 +491,6 @@ export class DemandeAbsenceService {
     where: { id: demandeId },
   });
 }
-
-async findPendingByService(serviceId: number, user: any) {
-  // 1. Vérifier si le service existe
-  const serviceExists = await this.prisma.service.findUnique({
-    where: { id: serviceId },
-  });
-  if (!serviceExists) {
-    throw new NotFoundException(`Le service avec l'ID ${serviceId} n'existe pas.`);
-  }
-
-  // 2. Récupérer uniquement les demandes EN_ATTENTE
-  const demandes = await this.prisma.demandeAbsence.findMany({
-    where: {
-      employe: {
-        serviceId: serviceId,
-      },
-      status: 'EN_ATTENTE', // 🔑 Filtrage strict
-    },
-    include: {
-      employe: {
-        select: {
-          id: true,
-          nom: true,
-          prenom: true,
-          email: true,
-          role: true,          
-          serviceId: true, 
-               },
-      },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
-
-  // 3. Contrôle d’accès : le manager ne peut traiter que
-  // - les demandes des employés de son service
-  // - les demandes des autres managers (pairs)
-  if (user.role === Role.MANAGER) {
-    return demandes.filter(
-      (d) =>
-        d.employe.serviceId === user.serviceId ||
-        d.employe.role === Role.MANAGER
-    );
-  }
-
-  // ✅ Si ADMIN, retour complet
-  return demandes;
-}
-
 
 
 }

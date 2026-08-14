@@ -2,90 +2,112 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Body,
   Param,
-  ParseIntPipe,
-  Delete,
   Query,
   UseGuards,
+  ParseIntPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiParam,
-  ApiQuery,
   ApiBearerAuth,
+  ApiQuery,
+  ApiParam,
 } from '@nestjs/swagger';
+
 import { PlanningService } from './planning.service';
 import { CreatePlanningDto } from './dto/create-planning.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorator/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { OwnershipOrSameServiceGuard } from '../auth/guards/ownership-or-same-service.guard';
-import { SameServiceGuard } from '../auth/guards/same-service.guard';
+import { CurrentUser } from '../auth/decorator/current-user.decorator';
 
-@ApiTags('Plannings')
-@ApiBearerAuth() // 🔑 Indique à Swagger que ce contrôleur nécessite l'authentification JWT
-@Controller('plannings')
+@ApiTags('Plannings & Horaires')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Controller('planning')
 export class PlanningController {
-  constructor(private readonly service: PlanningService) {}
+  constructor(private readonly planningService: PlanningService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.MANAGER) // 🔑 Seuls les Admins et Managers peuvent créer/attribuer un planning
-  @ApiOperation({ summary: 'Attribuer un planning / shift de travail à un employé' })
-  @ApiResponse({ status: 201, description: 'Planning créé et attribué avec succès.' })
-  @ApiResponse({ status: 400, description: "Données d'entrée invalides." })
-  create(@Body() dto: CreatePlanningDto) {
-    return this.service.create(dto);
-  }
-
-  @Get('employe/:employeId')
-  @UseGuards(JwtAuthGuard, OwnershipOrSameServiceGuard) // 🔒 Propre profil, Manager du même service ou Admin
-  @ApiOperation({ summary: "Consulter l'historique des plannings d'un employé" })
-  @ApiParam({ name: 'employeId', example: 1, description: "ID de l'employé" })
-  @ApiResponse({ status: 200, description: 'Historique des plannings récupéré.' })
-  @ApiResponse({ status: 404, description: 'Employé introuvable.' })
-  findByEmploye(@Param('employeId', ParseIntPipe) employeId: number) {
-    return this.service.findByEmploye(employeId);
-  }
-
-  @Get('service/:serviceId')
-  @UseGuards(JwtAuthGuard, RolesGuard, SameServiceGuard)
-  @Roles(Role.ADMIN, Role.MANAGER) // 🔑 Accès réservé aux Admins et Managers du même service
-  @ApiOperation({ summary: "Obtenir les plannings d'un service spécifique" })
-  @ApiParam({ name: 'serviceId', example: 1, description: 'ID du service' })
-  @ApiQuery({
-    name: 'dateDebut',
-    required: false,
-    example: '2026-08-01',
-    description: 'Date de début de la plage',
+  @Roles('MANAGER', Role.ADMIN)
+  @ApiOperation({
+    summary: 'Créer/Assigner un planning (Manager / Admin)',
+    description:
+      'Permet d\'assigner un planning à un ou plusieurs employés. Les managers ne peuvent assigner un planning qu\'aux employés situés sous leur branche hiérarchique.',
   })
-  @ApiQuery({
-    name: 'dateFin',
-    required: false,
-    example: '2026-08-31',
-    description: 'Date de fin de la plage',
-  })
-  @ApiResponse({ status: 200, description: 'Plannings du service récupérés.' })
-  async getPlanningsByService(
-    @Param('serviceId', ParseIntPipe) serviceId: number,
-    @Query('dateDebut') dateDebut?: string,
-    @Query('dateFin') dateFin?: string,
+  @ApiResponse({ status: 201, description: 'Planning créé avec succès.' })
+  @ApiResponse({ status: 400, description: 'Données invalides ou liste d\'employés vide.' })
+  @ApiResponse({ status: 403, description: 'Tentative d\'assignation hors de la branche du Manager.' })
+  async create(
+    @Body() dto: CreatePlanningDto,
+    @CurrentUser() user: any,
   ) {
-    return this.service.findByService(serviceId, dateDebut, dateFin);
+    return this.planningService.create(dto, user);
+  }
+
+  @Get('mon-planning')
+  @ApiOperation({
+    summary: 'Consulter son planning personnel',
+  })
+  @ApiQuery({ name: 'startDate', required: false, example: '2026-08-01' })
+  @ApiQuery({ name: 'endDate', required: false, example: '2026-08-31' })
+  async findMyPlanning(
+    @CurrentUser() user: any,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const userId = Number(user.id ?? user.sub);
+    return this.planningService.findMyPlanning(userId, startDate, endDate);
+  }
+
+  @Get('mon-equipe')
+  @Roles('MANAGER')
+  @ApiOperation({
+    summary: 'Consulter le planning de son équipe (Manager)',
+    description: 'Retourne le planning de tous les membres sous la responsabilité du Manager.',
+  })
+  @ApiQuery({ name: 'startDate', required: false, example: '2026-08-01' })
+  @ApiQuery({ name: 'endDate', required: false, example: '2026-08-31' })
+  async findTeamPlanning(
+    @CurrentUser() user: any,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const userId = Number(user.id ?? user.sub);
+    return this.planningService.findTeamPlanning(userId, startDate, endDate);
+  }
+
+  @Get('global')
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary: 'Consulter tout le planning de l\'entreprise (Admin)',
+  })
+  @ApiQuery({ name: 'startDate', required: false, example: '2026-08-01' })
+  @ApiQuery({ name: 'endDate', required: false, example: '2026-08-31' })
+  @ApiQuery({ name: 'organizationId', required: false, type: Number })
+  async findAllPlanning(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('organizationId') organizationId?: number,
+  ) {
+    return this.planningService.findAllPlanning(startDate, endDate, organizationId ? Number(organizationId) : undefined);
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.MANAGER) // 🔑 Seuls les Admins et Managers peuvent supprimer un planning
-  @ApiOperation({ summary: 'Supprimer un planning par son ID' })
-  @ApiParam({ name: 'id', example: 1, description: 'ID du planning à supprimer' })
-  @ApiResponse({ status: 200, description: 'Planning supprimé avec succès.' })
-  @ApiResponse({ status: 404, description: 'Planning introuvable.' })
-  delete(@Param('id', ParseIntPipe) id: number) {
-    return this.service.delete(id);
+  @Roles('MANAGER', Role.ADMIN)
+  @ApiOperation({
+    summary: 'Supprimer un planning',
+  })
+  @ApiParam({ name: 'id', description: 'ID du planning', type: Number })
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: any,
+  ) {
+    return this.planningService.remove(id, user);
   }
 }

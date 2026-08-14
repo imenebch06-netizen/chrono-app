@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsArray,
   IsDateString,
@@ -7,18 +8,16 @@ import {
   IsOptional,
   IsString,
   Matches,
+  ValidateNested,
 } from 'class-validator';
 
-export class CreatePlanningDto {
-  @ApiProperty({ example: [1, 2, 3], description: "IDs des employés concernés" })
-  @IsArray()
-  @IsInt({ each: true })
-  @IsNotEmpty()
-  employeIds!: number[];
-  @ApiProperty({ example: 1, description: "ID de l'employé concerné" })
+// A. Représente UN élément de planning dans le tableau
+export class CreatePlanningItemDto {
+  @ApiProperty({ example: 24, description: "ID de l'employé concerné" })
   @IsInt()
-  @IsOptional()
+  @IsNotEmpty()
   employeId!: number;
+
   @ApiProperty({
     example: '2026-08-01T00:00:00.000Z',
     description: 'Début de la période de planning',
@@ -36,69 +35,55 @@ export class CreatePlanningDto {
   dateFin!: string;
 
   @ApiProperty({
-    example: 'SHIFT_3X8',
-    description: 'Type de régination : NORMAL, SHIFT_3X8, FLEXIBLE, REPOS',
+    example: 'NORMAL',
+    description: 'Type de régime : NORMAL, SHIFT_3X8, FLEXIBLE, REPOS',
   })
   @IsString()
   @IsNotEmpty()
-  type_travail!: string; // 'NORMAL' | 'SHIFT_3X8' | 'FLEXIBLE' | 'REPOS'
+  type_travail!: string;
 
-  // ──── 1. HORAIRES CLASSIQUES OU DE SHIFT ────
-  @ApiPropertyOptional({
-    example: '06:00',
-    description: 'Heure de début théorique / du shift',
-  })
+  @ApiPropertyOptional({ example: '08:00', description: 'Heure de début' })
   @IsOptional()
   @IsString()
-  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
-    message: "Format HH:mm attendu (ex: '06:00')",
-  })
+  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
   heureDebut?: string;
 
-  @ApiPropertyOptional({
-    example: '14:00',
-    description: 'Heure de fin théorique / du shift',
-  })
+  @ApiPropertyOptional({ example: '16:00', description: 'Heure de fin' })
   @IsOptional()
   @IsString()
-  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
-    message: "Format HH:mm attendu (ex: '14:00')",
-  })
+  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
   heureFin?: string;
 
-  // ──── 2. OPTION POUR MODE 3X8 (SHIFTS) ────
-  @ApiPropertyOptional({
-    example: 'MATIN',
-    description: 'Type de shift si 3x8 : MATIN, SOIR, NUIT',
-  })
+  @ApiPropertyOptional({ example: 'MATIN', description: 'MATIN, SOIR, NUIT' })
   @IsOptional()
   @IsString()
-  typeShift?: string; // 'MATIN' | 'SOIR' | 'NUIT'
+  typeShift?: string;
 
-  // ──── 3. OPTION POUR HORAIRES FLEXIBLES (PLAGE FIXE) ────
-  @ApiPropertyOptional({
-    example: '09:30',
-    description: 'Début de la plage de présence obligatoire (Horaires flexibles)',
-  })
+  @ApiPropertyOptional({ example: '09:30' })
   @IsOptional()
   @IsString()
   @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
   plageFixeDebut?: string;
 
-  @ApiPropertyOptional({
-    example: '15:30',
-    description: 'Fin de la plage de présence obligatoire (Horaires flexibles)',
-  })
+  @ApiPropertyOptional({ example: '15:30' })
   @IsOptional()
   @IsString()
   @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
   plageFixeFin?: string;
 
-  // ──── 4. JOURS DE REPOS ────
-  @ApiPropertyOptional({
-    example: [5, 6],
-    description: 'Jours de repos (0=Dimanche, 1=Lundi, ..., 6=Samedi)',
-  })
+  @ApiPropertyOptional({ example: [5, 6], description: 'Jours de repos' })
   @IsOptional()
   joursRepos?: number[] | string;
+}
+
+// B. Représente l'objet JSON racine reçu { "planning": [ ... ] }
+export class CreatePlanningDto {
+  @ApiProperty({
+    type: [CreatePlanningItemDto],
+    description: 'Liste des plannings à attribuer',
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreatePlanningItemDto)
+  planning!: CreatePlanningItemDto[];
 }

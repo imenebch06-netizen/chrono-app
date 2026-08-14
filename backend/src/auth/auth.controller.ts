@@ -23,7 +23,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
   // Limitation du nombre de requêtes pour éviter les abus (5 requêtes par minute - par éxemple)
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+
   // Route pour l'inscription d'un nouvel utilisateur
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
@@ -35,7 +35,6 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   // Route pour la connexion d'un utilisateur existant
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -59,11 +58,5 @@ export class AuthController {
       user: req.user,
     };
   }
-  // Route pour récupérer le token CSRF global (utile pour les formulaires côté client, et assure la protection contre les attaques CSRF)
-  @Get('csrf-token')
-  @ApiOperation({ summary: 'Récupérer le token CSRF global' })
-  getCsrfToken(@Req() req: any, @Res() res: express.Response) {
-    const csrfToken = req.csrfToken ? req.csrfToken() : '';
-    return res.json({ csrfToken });
-  }
+
 }

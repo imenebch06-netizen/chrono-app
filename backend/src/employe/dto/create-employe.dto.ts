@@ -6,10 +6,12 @@ import {
   IsOptional,
   IsString,
   MinLength,
+  IsNumber, 
+  ValidateIf
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from '@prisma/client'; // 👈 Import de l'Enum généré par Prisma
-
+import { Type } from 'class-transformer';
 export class CreateEmployeDto {
   @ApiProperty({ example: 'Benali', description: "Nom de famille de l'employé" })
   @IsString()
@@ -45,13 +47,11 @@ export class CreateEmployeDto {
   @IsOptional()
   role?: Role;
 
-  @ApiPropertyOptional({ example: 1, description: 'ID du service rattaché' })
-  @IsInt()
+ // 🟢 FIX 400 : Valide comme IsNumber SEULEMENT si la valeur n'est ni null ni undefined
   @IsOptional()
-  serviceId?: number;
+  @ValidateIf((object, value) => value !== null && value !== undefined)
+  @Type(() => Number)
+  @IsNumber({}, { message: 'organizationId doit être un nombre' })
+  organizationId?: number | null;
 
-  @ApiPropertyOptional({ example: 2, description: 'ID du manager hiérarchique' })
-  @IsInt()
-  @IsOptional()
-  managerId?: number;
 }

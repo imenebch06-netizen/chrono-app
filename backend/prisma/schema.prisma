@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,73 +6,16 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
-// Ajout de l'Enum Role
+
+// ==========================================
+// ENUMS
+// ==========================================
+
 enum Role {
   EMPLOYE
-  MANAGER
   ADMIN
 }
 
-enum Statut {
-  EN_ATTENTE
-  VALIDE
-  REFUSE
-}
-
-model Direction {
-  id            Int       @id @default(autoincrement())
-  nom_direction String
-  // 🔑 Un manager optionnel responsable de TOUTE la direction
-  managerId   Int?      @unique
-  manager     Employe?  @relation("DirectionManager", fields: [managerId], references: [id])
-  services      Service[]
-  createdAt     DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-model Service {
-  id          Int       @id @default(autoincrement())
-  nom_service String
-  directionId Int
-  direction   Direction @relation(fields: [directionId], references: [id],onDelete: Cascade)
-  // 🔑 Un manager optionnel responsable de ce service spécifique
-  managerId   Int?
-  manager     Employe?  @relation("ServiceManager", fields: [managerId], references: [id])
-  employes    Employe[]
-  createdAt   DateTime  @default(now())
-}
-
-model Employe {
-  id          Int      @id @default(autoincrement())
-  nom         String
-  prenom      String
-  email       String   @unique
-  password    String
-  adress      String?
-  
-  // Utilisation de l'Enum ici avec valeur par défaut EMPLOYE
-  role        Role     @default(EMPLOYE)
-
-  serviceId   Int?
-  service     Service? @relation(fields: [serviceId], references: [id])
-
-  managerId   Int?
-  manager     Employe?  @relation("Supervision", fields: [managerId], references: [id])
-  subordonnes Employe[] @relation("Supervision")
-
-  directionGeree Direction? @relation("DirectionManager")
-  servicesGeres  Service[]  @relation("ServiceManager")
-
-  compteur        Compteur?         // Relation 1-to-1 (Tableau de bord de solde global)
-  plannings       Planning[]        // Relation 1-to-N (Planning de travail / Shifts)
-  pointages       Pointage[]        // Relation 1-to-N (Pointages quotidiens)
-
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  demandesAbsence DemandeAbsence[]
-}
-// Enums
 enum StatutDemande {
   EN_ATTENTE
   VALIDE
@@ -90,7 +28,84 @@ enum TypeDemande {
   RECUPERATION
 }
 
-// Modèle DemandeAbsence (Contient la classe mère + les sous-classes)
+// ==========================================
+// STRUCTURE ORGANISATIONNELLE (ARBRE)
+// ==========================================
+
+// 1. Dictionnaire des types d'organisations
+model TypeOrganization {
+  id            Int            @id @default(autoincrement())
+  code          String         @unique // "DG", "DIRECTION", "DEPARTEMENT", "SERVICE"
+  libelle       String         // "Direction Générale", "Direction", "Département", "Service"
+  
+  organizations Organization[]
+}
+
+// 2. Table unique hiérarchique (Modèle Arbre + Materialized Path pour MySQL)
+model Organization {
+  id                  Int               @id @default(autoincrement())
+  nom                 String
+  
+  // 🔑 Chemin matérialisé pour la recherche récursive ultra-rapide sous MySQL (Ex: "1/2/5")
+  path                String?
+
+  // A. Type de l'organisation (DG, Direction, Département, Service)
+  typeOrganizationId  Int
+  typeOrganization    TypeOrganization  @relation(fields: [typeOrganizationId], references: [id])
+
+  // B. Auto-référence : L'organisation parente
+  idOrganizationSup   Int?
+  parent              Organization?     @relation("OrgHierarchy", fields: [idOrganizationSup], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  
+  // C. Auto-référence : Les sous-organisations enfants
+  children            Organization[]    @relation("OrgHierarchy")
+
+  // D. Manager unique de cette organisation
+  managerId           Int?              @unique
+  manager             Employe?          @relation("OrganizationManager", fields: [managerId], references: [id])
+
+  // E. Liste des employés rattachés à cette organisation
+  membres             Employe[]         @relation("OrganizationMembers")
+  
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+}
+
+// ==========================================
+// UTILISATEURS / EMPLOYÉS
+// ==========================================
+
+model Employe {
+  id                  Int               @id @default(autoincrement())
+  nom                 String
+  prenom              String
+  email               String            @unique
+  password            String
+  adress              String?
+  role                Role              @default(EMPLOYE)
+
+  // Rattachement à une organisation (DG, Direction, Dept ou Service)
+  organizationId      Int?
+  organization        Organization?     @relation("OrganizationMembers", fields: [organizationId], references: [id], onDelete: SetNull)
+
+  // Organisation dont cet employé est le chef
+  organizationGeree   Organization?     @relation("OrganizationManager")
+  
+  // Relations métier
+  compteur            Compteur?
+  plannings           Planning[]
+  pointages           Pointage[]
+  demandesAbsence     DemandeAbsence[]
+  notifications       Notification[] // 👈 NOUVELLE RELATION
+  
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+}
+
+// ==========================================
+// DEMANDES D'ABSENCE
+// ==========================================
+
 model DemandeAbsence {
   id                 Int           @id @default(autoincrement())
   typeDemande        TypeDemande
@@ -100,63 +115,95 @@ model DemandeAbsence {
   motif              String
   justificatif       String?
 
-  // Champ spécifique à Conge
+  // Champs spécifiques selon le type
   type_conge         String?
-
-  // Champ spécifique à Absence
   justifie           Boolean?      @default(false)
-
-  // Champ spécifique à Recuperation
   heures_a_recuperer Float?
 
   // Relation avec Employe
   employeId          Int
   employe            Employe       @relation(fields: [employeId], references: [id], onDelete: Cascade)
 
+  planningId Int?      
+  planning   Planning? @relation(fields: [planningId], references: [id])
+
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 }
 
+// ==========================================
+// PLANNINGS & SHIFTS
+// ==========================================
+
 model Planning {
   id              Int      @id @default(autoincrement())
   employeId       Int
-  employe         Employe  @relation(fields: [employeId], references: [id])
+  employe         Employe  @relation(fields: [employeId], references: [id], onDelete: Cascade)
   dateDebut       DateTime
   dateFin         DateTime
-  heureDebut      String?  // Ex: "06:00" ou "08:00"
-  heureFin        String?  // Ex: "14:00" ou "16:00"
+  heureDebut      String?  // Ex: "08:00"
+  heureFin        String?  // Ex: "16:00"
   type_travail    String   // "NORMAL", "SHIFT_3X8", "FLEXIBLE", "REPOS"
   typeShift       String?  // "MATIN", "SOIR", "NUIT"
-  plageFixeDebut  String?  // "09:30"
-  plageFixeFin    String?  // "15:30"
-  joursRepos      String?  // "5,6"
+  demandes  DemandeAbsence[] // Relation inverse
+  plageFixeDebut String?
+  plageFixeFin   String?
+  joursRepos     String?  // Ex: "5,6"
   createdAt       DateTime @default(now())
 }
-// ⏱️ Modèle Pointage : Enregistre l'arrivée, le départ et l'écart du jour
+
+// ==========================================
+// POINTAGES
+// ==========================================
+
 model Pointage {
-  id           Int      @id @default(autoincrement())
-  date         DateTime // Jour du pointage (YYYY-MM-DD)
-  heureDebut   DateTime // Horodatage précis d'arrivée
-  heureFin     DateTime?// Horodatage précis de départ (optionnel au moment de l'arrivée)
-  dureeHeures  Float?   // Total des heures travaillées dans la journée (ex: 8.5)
-  creditDebit  Float?   // Écart de la journée (ex: +0.5 ou -1.0)
+  id          Int       @id @default(autoincrement())
+  date        DateTime
+  heureDebut  DateTime
+  heureFin    DateTime?
+  dureeHeures Float?
+  creditDebit Float?
 
-  employeId    Int
-  employe      Employe  @relation(fields: [employeId], references: [id], onDelete: Cascade)
+  employeId   Int
+  employe     Employe   @relation(fields: [employeId], references: [id], onDelete: Cascade)
 
-  createdAt    DateTime @default(now())
+  createdAt   DateTime  @default(now())
 
-  // 🛡️ EMPÊCHE PHYSIQUEMENT LES DOUBLONS SUR (employeId + date)
   @@unique([employeId, date])
 }
 
-// 📊 Modèle Compteur : Stocke les soldes cumulés globaux de l'employé
+// ==========================================
+// COMPTEUR DE SOLDES
+// ==========================================
+
 model Compteur {
   id           Int     @id @default(autoincrement())
-  solde_conges Float   @default(25.0) // Solde de jours de congés payés restant
-  solde_rtt    Float   @default(0.0)  // Solde en heures RTT
-  credit_debit Float   @default(0.0)  // Balance globale cumulée (+ heure sup / - absence)
+  solde_conges Float   @default(0.0)
+  solde_rtt    Float   @default(0.0)
+  credit_debit Float   @default(0.0)
 
   employeId    Int     @unique
   employe      Employe @relation(fields: [employeId], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// NOTIFICATIONS
+// ==========================================
+
+model Notification {
+  id         Int      @id @default(autoincrement())
+  titre      String
+  message    String
+  type       String   // "DEMANDE_CREEE", "DEMANDE_VALIDEE", "DEMANDE_REFUSEE"
+  isRead     Boolean  @default(false)
+
+  // Destinataire (Manager ou Employé, JAMAIS l'Admin)
+  employeId  Int
+  employe    Employe  @relation(fields: [employeId], references: [id], onDelete: Cascade)
+
+  // Référence facultative vers la demande d'absence
+  demandeId  Int?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }

@@ -54,8 +54,8 @@ export class CreateDemandeAbsenceDto {
   @ApiProperty({ example: 1, description: "ID de l'employé" })
   @Type(() => Number)
   @IsInt()
-  @IsNotEmpty()
-  employeId!: number;
+  @IsOptional()
+  employeId?: number;
 
   // Champs spécifiques selon l'héritage UML
   @ApiPropertyOptional({ example: 'Payé', description: 'Requis si CONGE' })

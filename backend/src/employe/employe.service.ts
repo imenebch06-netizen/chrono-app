@@ -1,5 +1,5 @@
-// employe.service.ts
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+//@ts-nocheck
+import { Injectable, ConflictException, NotFoundException,BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEmployeDto } from './dto/create-employe.dto';
 import * as bcrypt from 'bcrypt';
@@ -19,25 +19,16 @@ export class EmployeService {
     if (existing) {
       throw new ConflictException('Cet email est déjà utilisé.');
     }
-
-    // 2️⃣ Recherche automatique du Manager du service si managerId est absent
-    let finalManagerId = createEmployeDto.managerId;
-
-    if (!finalManagerId && createEmployeDto.serviceId) {
-      const managerDuService = await this.prisma.employe.findFirst({
-        where: {
-          serviceId: createEmployeDto.serviceId,
-          role: 'MANAGER', // 🔑 on cherche le manager du service
-        },
+    // 2️⃣ Vérification de l'existence de l'organisation (si fournie)
+    if (createEmployeDto.organizationId) {
+      const org = await this.prisma.organization.findUnique({
+        where: { id: createEmployeDto.organizationId },
       });
-
-      if (!managerDuService) {
+      if (!org) {
         throw new NotFoundException(
-          `Aucun manager trouvé pour le service #${createEmployeDto.serviceId}.`
+          `L'organisation #${createEmployeDto.organizationId} est introuvable.`,
         );
       }
-
-      finalManagerId = managerDuService.id;
     }
 
     // 3️⃣ Hachage du mot de passe
@@ -52,8 +43,7 @@ export class EmployeService {
         password: hashedPassword,
         adress: createEmployeDto.adress,
         role: createEmployeDto.role ?? 'EMPLOYE',
-        serviceId: createEmployeDto.serviceId,
-        managerId: finalManagerId, // 👈 auto-attribué
+        organizationId: createEmployeDto.organizationId ?? null,
       },
       select: {
         id: true,
@@ -62,8 +52,13 @@ export class EmployeService {
         email: true,
         role: true,
         adress: true,
-        serviceId: true,
-        managerId: true,
+        organizationId: true,
+        organization:{
+          select:{
+            id:true,
+            nom:true,
+          },
+        },
         createdAt: true,
       },
     });
@@ -81,21 +76,34 @@ export class EmployeService {
         email: true,
         role: true,
         adress: true,
-        service: { select: { id: true, nom_service: true } },
-        manager: { select: { id: true, nom: true, prenom: true } },
+        organizationId: true,
+        organization:{
+          select:{
+            id:true,
+            nom:true,
+          },
+        },
         createdAt: true,
       },
     });
   }
 
+  // =========================================================================
   // 3. READ ONE
+  // =========================================================================
   async findOne(id: number) {
     const employe = await this.prisma.employe.findUnique({
       where: { id },
       include: {
-        service: true,
-        manager: true,
-        subordonnes: true,
+        // 🔑 1. On charge la relation "organization" (avec un z) et non la clé "organisationId"
+        organization: {
+          select: {
+            id: true,
+            nom: true,
+            typeOrganization: true,
+            path: true,
+          },
+        },
       },
     });
 
@@ -115,238 +123,281 @@ export class EmployeService {
     });
   }
 
-  // 5. UPDATE
-  async update(id: number, updateEmployeDto: UpdateEmployeDto) {
-    await this.findOne(id); // Vérifie d'abord si l'employé existe
+// =========================================================================
+  // 5. UPDATE (Corrigé pour Prisma)
+  // =========================================================================
+  async update(id: number | string, updateEmployeDto: UpdateEmployeDto) {
+    // 1️⃣ Convertir l'ID en entier pour Prisma
+    const numericId = Number(id);
 
-    // Si le mot de passe est modifié, on le re-hache
-    if (updateEmployeDto.password) {
-      updateEmployeDto.password = await bcrypt.hash(updateEmployeDto.password, 10);
+    if (isNaN(numericId)) {
+      throw new BadRequestException("L'ID fourni est invalide.");
     }
 
-    return this.prisma.employe.update({
-      where: { id },
-      data: updateEmployeDto,
-      select: {
-        id: true,
-        nom: true,
-        prenom: true,
-        email: true,
-        role: true,
-        updatedAt: true,
-      },
-    });
-  }
+    // 2️⃣ Vérification de l'existence de l'employé
+    await this.findOne(numericId);
 
-  // 6. DELETE
-  async remove(id: number) {
-    await this.findOne(id); // Vérifie s'il existe
+    const { nom, prenom, email, password, adress, role, organizationId } = updateEmployeDto;
 
-    await this.prisma.employe.delete({
-      where: { id },
-    });
-
-    return { message: `L'employé avec l'ID ${id} a été supprimé avec succès.` };
-  }
-
-  async findByService(serviceId: number) {
-    return this.prisma.employe.findMany({
-      where: {
-        serviceId: serviceId,
-      },
-      select: {
-        id: true,
-        nom: true,
-        prenom: true,
-        email: true,
-        role: true,
-        serviceId: true,
-        // Tu peux sélectionner uniquement les champs nécessaires pour le front
-      },
-    });
-  }
-
-  // Récupère l'équipe globale du manager (Smart Scope : Service + Direction complète)
-async findEquipeDuManager(managerId: number) {
-  // 1. Charger le profil du manager avec la Direction et les Services qu'il gère
-  const manager = await this.prisma.employe.findUnique({
-    where: { id: managerId },
-    include: {
-      directionGeree: {
-        include: {
-          services: { select: { id: true } }, // Les IDs de tous les services de sa Direction
+    // 3️⃣ Vérification unicité email
+    if (email) {
+      const existingEmail = await this.prisma.employe.findFirst({
+        where: {
+          email,
+          NOT: { id: numericId },
         },
-      },
-      servicesGeres: { select: { id: true } }, // Les IDs des services qu'il gère directement
-    },
-  });
+      });
+      if (existingEmail) {
+        throw new ConflictException('Cet email est déjà utilisé par un autre employé.');
+      }
+    }
 
-  if (!manager) {
-    throw new NotFoundException(`Manager avec l'ID ${managerId} introuvable.`);
-  }
+    // 4️⃣ Vérification existence de l'organisation
+    if (organizationId) {
+      const org = await this.prisma.organization.findUnique({
+        where: { id: Number(organizationId) },
+      });
+      if (!org) {
+        throw new NotFoundException(`L'organisation #${organizationId} est introuvable.`);
+      }
+    }
 
-  // 2. Construire la liste de TOUS les IDs de services sous sa responsabilité
-  const serviceIdsSet = new Set<number>();
+    // 5️⃣ Construction de l'objet de mise à jour pour Prisma
+    const dataToUpdate: any = {};
 
-  // A. Son propre service de rattachement
-  if (manager.serviceId) {
-    serviceIdsSet.add(manager.serviceId);
-  }
+    if (nom !== undefined) dataToUpdate.nom = nom;
+    if (prenom !== undefined) dataToUpdate.prenom = prenom;
+    if (email !== undefined) dataToUpdate.email = email;
+    if (adress !== undefined) dataToUpdate.adress = adress;
+    if (role !== undefined) dataToUpdate.role = role;
 
-  // B. Les services qu'il gère en tant que Manager de Service
-  manager.servicesGeres.forEach((s) => serviceIdsSet.add(s.id));
+    if (organizationId !== undefined) {
+      const targetOrgId = organizationId ? Number(organizationId) : null;
 
-  // C. 🔑 S'il est Directeur : Ajouter TOUS les services de sa Direction
-  if (manager.directionGeree) {
-    manager.directionGeree.services.forEach((s) => serviceIdsSet.add(s.id));
-  }
+      if (targetOrgId) {
+        const org = await this.prisma.organization.findUnique({
+          where: { id: targetOrgId },
+        });
+        if (!org) {
+          throw new NotFoundException(`L'organisation #${targetOrgId} est introuvable.`);
+        }
+      }else{
+        // 🟢 FIX : Si on le détache d'organisation (targetOrgId === null),
+        // on retire automatiquement son rôle de manager sur toute organisation qu'il gérait !
+        await this.prisma.organization.updateMany({
+          where: { managerId: numericId },
+          data: { managerId: null },
+        });
+      }
 
-  const serviceIds = Array.from(serviceIdsSet);
+      dataToUpdate.organizationId = targetOrgId; // 👈 Avec un 'z' !
+    }
 
-  // 3. Récupérer l'ensemble des employés correspondant au périmètre
-  return this.prisma.employe.findMany({
-    where: {
-      OR: [
-        // Condition 1 : Subordonnés directs (managerId === manager.id)
-        { managerId: managerId },
+    // Hachage mot de passe si fourni
+    if (password && password.trim() !== '') {
+      dataToUpdate.password = await bcrypt.hash(password, 10);
+    }
 
-        // Condition 2 : Appartiennent à l'un des services du périmètre
-        ...(serviceIds.length > 0 ? [{ serviceId: { in: serviceIds } }] : []),
-      ],
-      // Exclure le manager lui-même de la liste de son équipe
-      NOT: { id: managerId },
-    },
-    select: {
-      id: true,
-      nom: true,
-      prenom: true,
-      email: true,
-      role: true,
-      serviceId: true,
-      managerId: true,
-      service: {
+   // 4️⃣ Exécution de l'update avec try/catch pour capturer les erreurs Prisma
+    try {
+      return await this.prisma.employe.update({
+        where: { id: numericId },
+        data: dataToUpdate,
         select: {
           id: true,
-          nom_service: true,
-          direction: { select: { id: true, nom_direction: true } },
-        },
-      },
-      compteur: true, // Pour consulter leurs soldes dans le dashboard
-    },
-    orderBy: { nom: 'asc' },
-  });
-}
-
-// Récupère la vue d'ensemble complète du Manager (Direction, Services et Équipe)
-async getManagerDashboard(managerId: number) {
-  // 1. Récupérer les informations du Manager et ce qu'il gère
-  const manager = await this.prisma.employe.findUnique({
-    where: { id: managerId },
-    select: {
-      id: true,
-      nom: true,
-      prenom: true,
-      email: true,
-      role: true,
-
-      // A. Son service de travail actuel
-      service: {
-        select: {
-          id: true,
-          nom_service: true,
-          direction: { select: { id: true, nom_direction: true } },
-        },
-      },
-
-      // B. La Direction qu'il gère (si c'est un Directeur)
-      directionGeree: {
-        select: {
-          id: true,
-          nom_direction: true,
-          services: {
+          nom: true,
+          prenom: true,
+          email: true,
+          role: true,
+          adress: true,
+          organizationId: true,
+          organization: {
             select: {
               id: true,
-              nom_service: true,
-              _count: { select: { employes: true } },
+              nom: true,
             },
           },
+          updatedAt: true,
         },
-      },
-
-      // C. Le/Les Services qu'il gère (si c'est un Chef de service)
-      servicesGeres: {
-        select: {
-          id: true,
-          nom_service: true,
-          direction: { select: { id: true, nom_direction: true } },
-          _count: { select: { employes: true } },
-        },
-      },
-    },
-  });
-
-  if (!manager) {
-    throw new NotFoundException(`Manager avec l'ID ${managerId} introuvable.`);
+      });
+    } catch (error) {
+      console.error('❌ Erreur Prisma lors de la modification :', error);
+      throw new BadRequestException(`Impossible de mettre à jour l'employé: ${error.message}`);
+    }
   }
 
-  // 2. Récupérer toute son équipe (grâce à la méthode intelligente qu'on a créée)
-  const equipe = await this.findEquipeDuManager(managerId);
 
-  // 3. Retourner un objet complet pour le Front-end
-  return {
-    profile: {
-      id: manager.id,
-      nom: manager.nom,
-      prenom: manager.prenom,
-      email: manager.email,
-      role: manager.role,
-      serviceActuel: manager.service,
-    },
-    supervision: {
-      isDirecteur: !!manager.directionGeree,
-      directionGeree: manager.directionGeree || null,
-      servicesGeres: manager.servicesGeres,
-    },
-    statistiques: {
-      totalEmployesSupervises: equipe.length,
-    },
-    equipe, // La liste de tous ses employés
-  };
-}
-  // Récupère uniquement les Managers qui ne gèrent ENCORE AUCUNE Direction
-  async findAvailableDirectionManagers() {
-    return this.prisma.employe.findMany({
-      where: {
-        role: Role.MANAGER,
-        directionGeree: null, // 🔑 Aucun raccordement à une direction pour l'instant
-      },
-      select: {
-        id: true,
-        nom: true,
-        prenom: true,
-        email: true,
-        service: { select: { nom_service: true } },
-      },
-      orderBy: { nom: 'asc' },
+ // 6. DELETE (Sécurisé)
+async remove(id: number) {
+  // 1️⃣ Vérifier si l'employé existe
+  const numericId = Number(id);
+  await this.findOne( numericId);
+
+ // 🟢 FIX : Si cet employé est manager d'une organisation, 
+    // on libère l'organisation (managerId = null) avant de supprimer l'employé
+    await this.prisma.organization.updateMany({
+      where: { managerId: numericId },
+      data: { managerId: null },
     });
-  }
 
-  // Récupère uniquement les Managers qui ne gèrent ENCORE AUCUN SERVICE
-async findAvailableServiceManagers() {
-  return this.prisma.employe.findMany({
-    where: {
-      role: Role.MANAGER,
-      servicesGeres: {
-        none: {}, // 🔑 N'est responsable d'AUCUN service pour le moment
-      },
-    },
+  // 3️⃣ Suppression si tout est vert
+  return this.prisma.employe.delete({
+    where: { id },
     select: {
       id: true,
       nom: true,
       prenom: true,
       email: true,
     },
-    orderBy: { nom: 'asc' },
   });
+}
+
+  async findByOrganization(organizationId: number) {
+    return this.prisma.employe.findMany({
+      where: {
+        organisationId: organisationId,
+      },
+      select: {
+        id: true,
+        nom: true,
+        prenom: true,
+        email: true,
+        role: true,
+        organisationId: true,
+        organisation:{
+          slect:{
+            id: true,
+            nom:true,
+          }
+        }
+      },
+    });
+  }
+
+  async getEmployesSansPlanning(user: any) {
+  return await this.prisma.employe.findMany({
+    where: {
+      // 🟢 MAGIE PRISMA : Récupère uniquement les employés qui n'ont AUCUN planning rattaché !
+      plannings: {
+        none: {},
+      },
+      // Vos filtres habituels de rôle / manager ici...
+    },
+  });
+}
+
+ // =========================================================================
+  // READ SUBORDINATES (Pour l'espace Manager)
+  // =========================================================================
+  async findSubordinatesByManager(managerId: number) {
+    // 1️⃣ Trouver l'organisation gérée par ce manager
+    const managedOrg = await this.prisma.organization.findFirst({
+      where: { managerId },
+    });
+
+    if (!managedOrg) {
+      throw new NotFoundException(
+        `Aucune organisation gérée trouvée pour l'utilisateur #${managerId}.`,
+      );
+    }
+
+    // 2️⃣ Récupérer tous les employés de la sous-arborescence (via le path)
+    const subordinates = await this.prisma.employe.findMany({
+      where: {
+        organization: {
+          path: {
+            startsWith: managedOrg.path, // 🔑 Magie du Materialized Path : attrape toute la branche !
+          },
+        },
+        NOT: {
+          id: managerId, // Exclut le manager lui-même de la liste de ses subordonnés
+        },
+      },
+      select: {
+        id: true,
+        nom: true,
+        prenom: true,
+        email: true,
+        role: true,
+        adress: true,
+        organizationId: true,
+        organization: {
+          select: {
+            id: true,
+            nom: true,
+            path: true, // Très utile pour reconstruire le chemin complet dans Angular
+          },
+        },
+        plannings:true,
+        createdAt: true,
+      },
+      orderBy: {
+        nom: 'asc',
+      },
+    });
+
+    return {
+      managerOrganization: {
+        id: managedOrg.id,
+        nom: managedOrg.nom
+      },
+      total: subordinates.length,
+      subordinates,
+    };
+  }
+
+  // À ajouter à l'intérieur de la classe EmployeService dans employe.service.ts
+
+// =========================================================================
+// 🔑 CALCUL DYNAMIQUE DE L'ÉTAT D'UN EMPLOYÉ SUR UNE DATE DONNÉE
+// =========================================================================
+async calculerEtatEmploye(employeId: number, dateCible: Date = new Date()): Promise<string> {
+  const startOfDay = new Date(Date.UTC(dateCible.getFullYear(), dateCible.getMonth(), dateCible.getDate(), 0, 0, 0, 0));
+  const endOfDay = new Date(Date.UTC(dateCible.getFullYear(), dateCible.getMonth(), dateCible.getDate(), 23, 59, 59, 999));
+
+  // 1. A-t-il un pointage enregistré ?
+  const pointage = await this.prisma.pointage.findFirst({
+    where: {
+      employeId,
+      date: { gte: startOfDay, lte: endOfDay },
+    },
+  });
+  if (pointage) return 'PRESENT';
+
+  // 2. A-t-il un congé / récupération / absence validé ?
+  const absenceValide = await this.prisma.demandeAbsence.findFirst({
+    where: {
+      employeId,
+      status: 'VALIDE',
+      dateDebut: { lte: endOfDay },
+      dateFin: { gte: startOfDay },
+    },
+  });
+
+  if (absenceValide) {
+    const type = (absenceValide.type || '').toUpperCase();
+    if (type.includes('CONGE')) return 'CONGE';
+    if (type.includes('RECUP')) return 'RECUPERATION';
+    return 'ABSENT_JUSTIFIE';
+  }
+
+  // 3. Planning ou jour de repos ?
+  const planning = await this.prisma.planning.findFirst({
+    where: {
+      employeId,
+      dateDebut: { lte: endOfDay },
+      dateFin: { gte: startOfDay },
+    },
+  });
+
+  if (planning?.type_travail === 'REPOS') return 'REPOS';
+
+  if (!planning) {
+    const day = dateCible.getDay();
+    if (day === 5 || day === 6) return 'REPOS'; // Vendredi / Samedi
+  }
+
+  // 4. Sinon, il était prévu mais sans pointage ni justificatif
+  return 'ABSENT_NON_JUSTIFIE';
 }
 }

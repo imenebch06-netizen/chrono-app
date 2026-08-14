@@ -2,110 +2,109 @@ import {
   Controller,
   Get,
   Post,
-  Param,
   Query,
   UseInterceptors,
   UploadedFile,
   BadRequestException,
-  ParseIntPipe,
-  Delete,
   UseGuards,
+  Req, // 👈 Import de @Req
 } from '@nestjs/common';
+import type { Request } from 'express'; // 👈 Import du type Express Request
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
-  ApiConsumes,
-  ApiBody,
-  ApiQuery,
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiParam,
+  ApiConsumes,
+  ApiBody,
+  ApiQuery,
+  ApiProperty,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { PointageService } from './pointage.service';
-import { OwnershipOrSameServiceGuard } from '../auth/guards/ownership-or-same-service.guard';
+
+// 🛡️ Vos Guards, Décorateurs et Enums
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorator/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
 
+class ImportExcelDto {
+  @ApiProperty({
+    type: 'string',
+    format: 'binary',
+    description: 'Fichier Excel (.xlsx ou .xls)',
+  })
+  file: any;
+}
+
 @ApiTags('Pointages')
-@ApiBearerAuth() // 🔑 Nécessaire pour authentifier la requête dans Swagger
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('pointages')
 export class PointageController {
   constructor(private readonly pointageService: PointageService) {}
 
-  // ---------------------------------------------------------------------------
-  // 1. ROUTES STATIQUES (à placer impérativement en premier)
-  // ---------------------------------------------------------------------------
-
-  @Post('import-excel')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN) // 🔑 Autorisé aux Admins et Managers
-  @UseInterceptors(FileInterceptor('file'))
+  // =========================================================================
+  // 1. IMPORTATION DES POINTAGES (ADMIN UNIQUEMENT)
+  // =========================================================================
+  @Post('import')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Importer des pointages depuis Excel (Admin)' })
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Importer des pointages depuis un fichier Excel' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        file: { type: 'string', format: 'binary' },
-      },
-    },
-  })
+  @ApiBody({ type: ImportExcelDto })
   @ApiResponse({ status: 201, description: 'Importation réussie.' })
-  @ApiResponse({ status: 400, description: 'Fichier manquant ou format invalide.' })
-  async importerExcel(@UploadedFile() file: Express.Multer.File) {
+  @UseInterceptors(FileInterceptor('file'))
+  async importerPointages(@UploadedFile() file: Express.Multer.File) {
     if (!file) {
-      throw new BadRequestException('Veuillez fournir un fichier Excel (.xlsx ou .xls).');
+      throw new BadRequestException('Veuillez fournir un fichier Excel.');
     }
     return this.pointageService.importerPointagesDepuisExcel(file.buffer);
   }
 
-  @Get('date/employes')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN) // 🔑 Reservé aux Admins et Managers
-  @ApiOperation({ summary: 'Obtenir les pointages de tous les employés pour une date donnée' })
-  @ApiQuery({ name: 'date', example: '2026-07-26' })
-  @ApiResponse({ status: 200, description: 'Liste des pointages du jour récupérée.' })
-  async getEmployesByDate(@Query('date') date: string) {
-    return this.pointageService.getEmployesByDate(date);
+  // =========================================================================
+  // 2. POINTAGES DU JOUR POUR TOUTE LA BOÎTE (ADMIN UNIQUEMENT)
+  // =========================================================================
+  @Get('date')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Obtenir tous les pointages pour une date (Admin)' })
+  @ApiQuery({ name: 'date', required: true, example: '2026-08-10' })
+  @ApiResponse({ status: 200, description: 'Pointages globaux récupérés.' })
+  async getPointagesParDate(@Query('date') date: string) {
+    return this.pointageService.getPointagesParDate(date);
   }
 
-  @Get('tableau-bord-journee')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN) // 🔑 Réservé aux Admins et Managers
-  @ApiOperation({ summary: 'Obtenir le tableau de bord résumé de la journée' })
-  @ApiQuery({ name: 'date', example: '2026-07-26' })
-  @ApiResponse({ status: 200, description: 'Tableau de bord généré avec succès.' })
-  async getTableauDeBordJournee(@Query('date') date: string) {
-    return this.pointageService.getTableauDeBordJournee(date);
-  }
-
-  @Delete('delete-all')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN) // 🔑 Action critique strictement réservée à l'ADMIN
-  @ApiOperation({ summary: 'Supprimer tous les pointages (Purge)' })
-  @ApiResponse({ status: 200, description: 'Tous les pointages ont été supprimés.' })
-  async deleteAllPointages() {
-    await this.pointageService.deleteAllPointages();
-    return { message: 'Tous les pointages ont été supprimés avec succès.' };
-  }
-
-  // ---------------------------------------------------------------------------
-  // 2. ROUTES DYNAMIQUES (avec paramètres dans l'URL)
-  // ---------------------------------------------------------------------------
-
-  @Get('semaine/:employeId')
-  @UseGuards(JwtAuthGuard, OwnershipOrSameServiceGuard) // 🔒 Propre profil, Manager du même service ou Admin
-  @ApiOperation({ summary: "Obtenir les pointages d'une semaine pour un employé" })
-  @ApiParam({ name: 'employeId', example: 1, description: "ID de l'employé" })
-  @ApiQuery({ name: 'dateDebut', example: '2026-07-25' })
-  @ApiResponse({ status: 200, description: 'Pointages hebdomadaires récupérés.' })
-  async getSemaine(
-    @Param('employeId', ParseIntPipe) employeId: number,
+  // =========================================================================
+  // 3. MES PROPRES POINTAGES DE LA SEMAINE (@Req)
+  // =========================================================================
+  @Get('ma-semaine')
+  @Roles(Role.EMPLOYE, 'MANAGER', Role.ADMIN)
+  @ApiOperation({ summary: 'Obtenir ma vue semaine (Utilisateur connecté via JWT)' })
+  @ApiQuery({ name: 'dateDebut', required: true, example: '2026-08-10' })
+  @ApiResponse({ status: 200, description: 'Semaine de l’utilisateur récupérée.' })
+  async getMaSemaine(
+    @Req() req: Request, // 👈 Récupère la requête HTTP
     @Query('dateDebut') dateDebut: string,
   ) {
-    return this.pointageService.getSemaineEmploye(employeId, dateDebut);
+    // ID extrait de req.user (remplace .id par .userId ou .sub selon le payload de ton JWT)
+    const userId = (req as any).user.id;
+    return this.pointageService.getSemaineEmploye(userId, dateDebut);
+  }
+
+  // =========================================================================
+  // 4. POINTAGES DE MON ÉQUIPE (@Req)
+  // =========================================================================
+  @Get('mon-equipe')
+  @Roles('MANAGER', Role.ADMIN)
+  @ApiOperation({ summary: 'Obtenir les pointages de mon équipe pour une date (Chef connecté via JWT)' })
+  @ApiQuery({ name: 'date', required: true, example: '2026-08-10' })
+  @ApiResponse({ status: 200, description: 'Pointages de l’équipe récupérés.' })
+  async getMonEquipe(
+    @Req() req: Request, // 👈 Récupère la requête HTTP
+    @Query('date') date: string,
+  ) {
+    // ID du chef connecté extrait de req.user
+    const chefId = (req as any).user.id;
+    return this.pointageService.getPointagesEquipeParChef(chefId, date);
   }
 }

@@ -1,68 +1,93 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+
+import { Body,Delete, Controller, Get,Patch, Param, ParseIntPipe, Post, Req, UploadedFile, UseGuards, UseInterceptors} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiConsumes } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { OwnershipOrSameServiceGuard } from '../auth/guards/ownership-or-same-service.guard';
-import { PlanningService } from '../planning/planning.service';
-import { PointageService } from '../pointage/pointage.service';
-import { CompteurService } from '../compteur/compteur.service';
-import { DemandeAbsenceService } from '../demande-absence/demande-absence.service';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { CreateDemandeAbsenceDto } from 'src/demande-absence/dto/create-demande-absence.dto';
-
+import { EmployeService } from './employe.service';
+import { UpdateEmployeDto } from './dto/update-employe.dto';
+import { Roles } from 'src/auth/decorator/roles.decorator';
+import { Role } from 'src/auth/enums/role.enum';
+import { CreateEmployeDto } from './dto/create-employe.dto';
+import { CurrentUser } from '../auth/decorator/current-user.decorator';
 @ApiTags('Dashboard Employé')
 @ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('employe/dashboard')
 export class EmployeController {
   constructor(
-    private readonly planningService: PlanningService,
-    private readonly pointageService: PointageService,
-    private readonly compteurService: CompteurService,
-    private readonly demandeAbsenceService: DemandeAbsenceService,
+    private readonly employeService: EmployeService
   ) {}
 
-  // 1️⃣ Consulter son planning
-  @Get(':employeId/planning')
-  @UseGuards(JwtAuthGuard, OwnershipOrSameServiceGuard)
-  @ApiOperation({ summary: "Consulter le planning d'un employé" })
-  async getPlanning(@Param('employeId', ParseIntPipe) employeId: number) {
-    return this.planningService.findByEmploye(employeId);
+ // =========================================================================
+  // 👤 1. ESPACE PERSONNEL (Accessible par TOUT utilisateur connecté)
+  // =========================================================================
+
+  @Get('me')
+  @ApiOperation({ summary: 'Récupérer son propre profil (Espace Perso)' })
+  async getMyProfile(@CurrentUser() user: any) {
+    return this.employeService.findOne(user.id);
   }
 
-  // 2️⃣ Consulter ses pointages (semaine courante)
-  @Get(':employeId/pointages')
-  @UseGuards(JwtAuthGuard, OwnershipOrSameServiceGuard)
-  @ApiOperation({ summary: "Consulter les pointages d'un employé" })
-  async getPointages(@Param('employeId', ParseIntPipe) employeId: number) {
-    return this.pointageService.getSemaineEmploye(employeId, new Date().toISOString());
-  }
-
-  // 3️⃣ Consulter ses compteurs (Congés/RTT)
-  @Get(':employeId/compteur')
-  @UseGuards(JwtAuthGuard, OwnershipOrSameServiceGuard)
-  @ApiOperation({ summary: "Consulter les compteurs d'un employé" })
-  async getCompteur(@Param('employeId', ParseIntPipe) employeId: number) {
-    return this.compteurService.getByEmploye(employeId);
-  }
-
-  // 4️⃣ Consulter ses demandes d’absence
-  @Get(':employeId/demandes')
-  @UseGuards(JwtAuthGuard, OwnershipOrSameServiceGuard)
-  @ApiOperation({ summary: "Consulter les demandes d'absence d'un employé" })
-  async getDemandes(@Param('employeId', ParseIntPipe) employeId: number) {
-    return this.demandeAbsenceService.findByEmploye(employeId);
-  }
-
-  // 5️⃣ Créer une demande d’absence
-  @Post(':employeId/demande-absence')
-  @UseGuards(JwtAuthGuard)
-  @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('justificatif'))
-  @ApiOperation({ summary: "Créer une demande d'absence avec justificatif" })
-  async createDemandeAbsence(
-    @Body() dto: CreateDemandeAbsenceDto,
-    @Req() req: any,
-    @UploadedFile() file?: Express.Multer.File,
+  @Patch('me')
+  @ApiOperation({ summary: 'Modifier ses propres infos (mot de passe, adresse...)' })
+  async updateMyProfile(
+    @CurrentUser() user: any,
+    @Body() updateEmployeDto: UpdateEmployeDto,
   ) {
-    return this.demandeAbsenceService.create(dto, req.user, file);
+    return this.employeService.update(user.id, updateEmployeDto);
+  }
+
+  // =========================================================================
+  // 👔 2. ESPACE MANAGER (Accessible par MANAGER et ADMIN)
+  // =========================================================================
+
+  @Get('mon-equipe')
+  @Roles('MANAGER')
+  @ApiOperation({ summary: 'Récupérer les employés sous la responsabilité du manager' })
+  async getMyTeam(@CurrentUser() user: any) {
+    // On passe l'ID du manager connecté
+    return this.employeService.findSubordinatesByManager(user.id);
+  }
+
+  // =========================================================================
+  // 🛡️ 3. ESPACE ADMIN / GESTION GLOBALE (Accessible par ADMIN seul)
+  // =========================================================================
+
+  @Post()
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Créer un nouvel employé (Admin)' })
+  async create(@Body() createEmployeDto: CreateEmployeDto) {
+    return this.employeService.create(createEmployeDto);
+  }
+
+  @Get()
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Lister TOUS les employés de l’entreprise (Admin)' })
+  async findAll() {
+    return this.employeService.findAll();
+  }
+
+  @Get(':id')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Obtenir les détails d’un employé par son ID (Admin)' })
+  async findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.employeService.findOne(id);
+  }
+
+  @Patch(':id')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Modifier un employé existant (Admin)' })
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateEmployeDto: UpdateEmployeDto,
+  ) {
+    console.log('📥 REÇU DANS NESTJS :', updateEmployeDto);
+    return this.employeService.update(id, updateEmployeDto);
+  }
+
+  @Delete(':id')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Supprimer un employé (Admin)' })
+  async remove(@Param('id', ParseIntPipe) id: number) {
+    return this.employeService.remove(id);
   }
 }

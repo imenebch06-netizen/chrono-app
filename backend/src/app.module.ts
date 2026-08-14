@@ -7,8 +7,6 @@ import { PrismaModule } from './prisma/prisma.module';
 import { EmployeModule } from './employe/employe.module';
 import { AuthModule } from './auth/auth.module';
 import { UploadModule } from './upload/upload.module';
-import { ServicesModule } from './service/service.module';
-import { DirectionsModule } from './direction/direction.module';
 import { DemandeAbsenceModule } from './demande-absence/demande-absence.module';
 import { PlanningController } from './planning/planning.controller';
 import { PlanningService } from './planning/planning.service';
@@ -16,12 +14,11 @@ import { PlanningModule } from './planning/planning.module';
 import { PointageModule } from './pointage/pointage.module';
 import { CompteurModule } from './compteur/compteur.module';
 import { ScheduleModule } from '@nestjs/schedule';
-import { AdminService } from './admin/admin.service';
-import { AdminController } from './admin/admin.controller';
-import { AdminModule } from './admin/admin.module';
-import { ManagerController } from './manager/manager.controller';
-import { ManagerModule } from './manager/manager.module';
 
+import { OrganisationModule } from './organisation/organisation.module';
+import { NotificationController } from './notification/notification.controller';
+import { NotificationService } from './notification/notification.service';
+import { NotificationModule } from './notification/notification.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -30,17 +27,17 @@ import { ManagerModule } from './manager/manager.module';
     EmployeModule,
     AuthModule,
     UploadModule,
-    ServicesModule,
-    DirectionsModule,
     DemandeAbsenceModule,
     PlanningModule,
     PointageModule,
     CompteurModule,
     ScheduleModule.forRoot(),
-    AdminModule,
-    ManagerModule,
+  
+    OrganisationModule,
+
+    NotificationModule,
   ],
-  controllers: [AppController, PlanningController, AdminController, ManagerController],
-  providers: [AppService, PlanningService, AdminService],
+  controllers: [AppController, PlanningController, NotificationController],
+  providers: [AppService, PlanningService, NotificationService],
 })
 export class AppModule {}
