@@ -1,0 +1,93 @@
+<div class="w-100">
+  
+  <!-- Carte unifiée conforme aux styles du thème -->
+  <mat-card class="cardWithShadow overflow-hidden w-100">
+    
+    <!-- En-tête avec fond Thème Soft -->
+    <mat-card-header class="p-24 bg-light-primary d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center gap-16">
+        <div class="rounded-circle bg-primary text-white p-12 d-flex align-items-center justify-content-center">
+          <i-tabler name="clock-hour-4" class="icon-24"></i-tabler>
+        </div>
+        <div>
+          <mat-card-title class="f-s-20 f-w-600 m-b-4 text-primary">Mon Planning</mat-card-title>
+          <span class="f-s-12 text-muted font-semibold">Horaires & Configuration de travail</span>
+        </div>
+      </div>
+    </mat-card-header>
+
+    <!-- Contenu -->
+    <mat-card-content class="p-24">
+
+      <!-- 1. État de Chargement -->
+      <div *ngIf="isLoading" class="text-center p-24 text-muted">
+        <span>Chargement du planning en cours...</span>
+      </div>
+
+      <!-- 2. Aucun planning assigné -->
+      <div *ngIf="!isLoading && !planningDisplay" class="p-24 bg-light rounded text-center">
+        <i-tabler name="calendar-off" class="icon-32 text-muted mb-2"></i-tabler>
+        <p class="f-s-16 f-w-600 text-dark m-b-4">Aucun planning assigné</p>
+        <span class="f-s-12 text-muted">Votre manager ne vous a pas encore attribué de planning de travail.</span>
+      </div>
+
+      <!-- 3. Affichage du Planning dynamique -->
+      <div *ngIf="!isLoading && planningDisplay" class="d-flex flex-col gap-16">
+
+        <!-- Horaires (Heure Début - Heure Fin) -->
+        <div class="p-16 bg-light rounded d-flex align-items-center justify-content-between w-100">
+          <div class="d-flex align-items-center gap-16">
+            <div class="rounded bg-light-primary text-primary p-12 d-flex align-items-center justify-content-center">
+              <i-tabler name="clock" class="icon-20"></i-tabler>
+            </div>
+            <div>
+              <span class="f-s-12 text-muted d-block f-w-600">HORAIRES DU JOUR</span>
+              <span class="f-s-16 f-w-600 text-dark">
+                {{ planningDisplay.heurDebut }} - {{ planningDisplay.heurFin }}
+              </span>
+            </div>
+          </div>
+          <span class="f-s-12 f-w-600 p-x-12 p-y-4 bg-light-primary text-primary rounded-pill">
+            Journée de travail
+          </span>
+        </div>
+
+        <!-- Type de travail -->
+        <div class="p-16 bg-light rounded d-flex align-items-center justify-content-between w-100">
+          <div class="d-flex align-items-center gap-16">
+            <div class="rounded bg-light-secondary text-secondary p-12 d-flex align-items-center justify-content-center">
+              <i-tabler name="briefcase" class="icon-20"></i-tabler>
+            </div>
+            <div>
+              <span class="f-s-12 text-muted d-block f-w-600">TYPE DE TRAVAIL</span>
+              <span class="f-s-16 f-w-600 text-dark">{{ planningDisplay.typeDeTravail }}</span>
+            </div>
+          </div>
+          <span class="f-s-12 f-w-600 p-x-12 p-y-4 bg-light-secondary text-secondary rounded-pill">
+            {{ planningDisplay.typeDeTravail }}
+          </span>
+        </div>
+
+        <!-- Jours de repos -->
+        <div class="p-16 bg-light rounded d-flex align-items-center justify-content-between w-100">
+          <div class="d-flex align-items-center gap-16">
+            <div class="rounded bg-light-warning text-warning p-12 d-flex align-items-center justify-content-center">
+              <i-tabler name="calendar-off" class="icon-20"></i-tabler>
+            </div>
+            <div>
+              <span class="f-s-12 text-muted d-block f-w-600">JOURS DE REPOS</span>
+              <span class="f-s-16 f-w-600 text-dark">{{ planningDisplay.joursDeRepos }}</span>
+            </div>
+          </div>
+          <span class="f-s-12 f-w-600 p-x-12 p-y-4 bg-light-warning text-warning rounded-pill">
+            Repos hebdomadaire
+          </span>
+        </div>
+
+      </div>
+
+    </mat-card-content>
+
+  </mat-card>
+
+</div>

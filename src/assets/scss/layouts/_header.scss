@@ -1,10 +1,10 @@
 @use "../variables" as *;
 
 html .topbar {
-  position: sticky;
-  top: 0;
-  z-index: 9;
-  height: $header-height;
+  height: 48px;        // hauteur réduite
+  display: flex;
+  align-items: center; // centre verticalement les icônes et boutons
+  padding: 0 8px; 
 
   i-tabler {
     stroke-width: 1.5px;

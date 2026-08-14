@@ -1,10 +1,26 @@
-<div class="d-flex align-items-center justify-content-between">
-  <div class="branding"><app-branding></app-branding></div>
+
+<div class="d-flex align-items-center justify-content-between p-x-24 p-y-16">
+  <div class="branding">
+    <app-branding></app-branding>
+    
+  </div>
 
   @if(showToggle) {
-  <a href="javascript:void(0)" (click)="toggleMobileNav.emit()"
-    class="d-flex justify-content-center ng-star-inserted icon-40 align-items-center">
-    <i-tabler name="x" class="icon-20 d-flex"></i-tabler>
-  </a>
+    <a href="javascript:void(0)" (click)="toggleMobileNav.emit()"
+       class="d-flex justify-content-center icon-40 align-items-center">
+      <i-tabler name="x" class="icon-20 d-flex"></i-tabler>
+    </a>
   }
+</div>
+
+<!-- Liste filtrée unique -->
+<div class="scroll-sidebar">
+  <mat-nav-list class="sidebar-list p-x-16">
+    @for (item of navItems; track $index) {
+      <app-nav-item 
+        [item]="item" 
+        (notify)="toggleMobileNav.emit()">
+      </app-nav-item>
+    }
+  </mat-nav-list>
 </div>

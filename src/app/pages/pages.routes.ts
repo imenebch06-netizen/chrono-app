@@ -1,16 +1,11 @@
 import { Routes } from '@angular/router';
-import { StarterComponent } from './starter/starter.component';
+import { MesTachesComponent } from './mes-taches/mes-taches.component';
 
 export const PagesRoutes: Routes = [
+ 
   {
-    path: '',
-    component: StarterComponent,
-    data: {
-      title: 'Starter',
-      urls: [
-        { title: 'Dashboard', url: '/dashboard' },
-        { title: 'Starter' },
-      ],
-    },
+    path: 'mes-taches',
+    component: MesTachesComponent,
+    data: { title: 'Nouvelle Page' },
   },
 ];

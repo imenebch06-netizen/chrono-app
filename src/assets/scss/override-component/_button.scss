@@ -141,4 +141,22 @@ html {
       background-color: var(--mat-sys-primary);
     }
   }
+/* Bouton icône 100% transparent sans bordure ni fond */
+.btn-icon-pure {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  cursor: pointer;
+
+  /* Annule les effets de fond au survol de Material */
+  &.mat-mdc-icon-button {
+    background-color: transparent !important;
+    .mat-mdc-button-persistent-ripple::before {
+      display: none !important;
+    }
+  }
+}
+
 }

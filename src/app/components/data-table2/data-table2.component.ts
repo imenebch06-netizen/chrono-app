@@ -1,0 +1,212 @@
+import { Component, OnInit, ViewChild, inject, Output, EventEmitter } from '@angular/core'; // 🔑 Added Output & EventEmitter
+import { CommonModule } from '@angular/common';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatSort, MatSortModule } from '@angular/material/sort';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { Organization, OrganizationService } from '../../services/organization.service';
+import { EditOrgDialogComponent } from '../../components/edit-org-dialog/edit-org-dialog.component';
+import { AssignManagerDialogComponent } from '../../components/assign-manager-dialog/assign-manager-dialog.component';
+import { ConfirmDialogComponent } from '../confirm-dialog/confirm-dialog.component';
+
+@Component({
+  selector: 'app-data-table2',
+  standalone: true,
+  imports: [
+    CommonModule,
+    MatCardModule,
+    MatTableModule,
+    MatPaginatorModule,
+    MatSortModule,
+    MatTooltipModule,
+    MatIconModule,
+    MatButtonModule,
+    MatDialogModule
+  ],
+  templateUrl: './data-table2.component.html'
+})
+export class DataTable2Component implements OnInit {
+  // 🔑 Événement émis vers le parent (OrganizationComponent) pour rafraîchir l'arbre
+  @Output() orgUpdated = new EventEmitter<void>();
+
+  private snackBar = inject(MatSnackBar);
+  displayedOrgColumns: string[] = ['id', 'nom', 'organizationSup', 'manager', 'actions'];
+  orgDataSource = new MatTableDataSource<Organization>([]);
+
+  @ViewChild('orgPaginator') orgPaginator!: MatPaginator;
+  @ViewChild('orgSort') orgSort!: MatSort;
+
+  public orgService = inject(OrganizationService);
+  private dialog = inject(MatDialog);
+
+  ngOnInit(): void {
+    this.chargerOrganizations();
+  }
+
+  // 🔄 Charger les organisations depuis NestJS
+  chargerOrganizations(): void {
+    this.orgService.getOrganizations().subscribe({
+      next: (data) => {
+        this.orgDataSource.data = [...data];
+        this.orgDataSource.paginator = this.orgPaginator;
+        this.orgDataSource.sort = this.orgSort;
+      },
+      error: (err) => console.error('Erreur chargement organisations:', err)
+    });
+  }
+
+  // 🔍 Méthode appelée par le composant Parent (OrganizationComponent) pour le filtrage
+  appliquerFiltre(filterValue: string): void {
+    this.orgDataSource.filter = filterValue.trim().toLowerCase();
+  }
+
+  // 🔹 Calcul du chemin complet
+  getOrgPath(org: Organization): string {
+    if (!org) return 'Non définie';
+    return this.buildFullPath(org.id);
+  }
+
+  private buildFullPath(orgId: number): string {
+    const orgs = this.orgDataSource.data;
+    const orgMap = new Map(orgs.map(o => [o.id, o]));
+    let current = orgMap.get(orgId);
+
+    if (!current) return `Org #${orgId}`;
+
+    const names: string[] = [];
+    const visited = new Set<number>();
+
+    while (current && !visited.has(current.id)) {
+      visited.add(current.id);
+      names.unshift(current.nom);
+      
+      const parentId: number | undefined = current.idOrganizationSup || current.organizationSup?.id;
+      current = parentId ? orgMap.get(parentId) : undefined;
+    }
+
+    return names.join(' > ');
+  }
+
+  // ✏️ Modale de Modification
+  editOrg(org: Organization): void {
+    const dialogRef = this.dialog.open(EditOrgDialogComponent, {
+      width: '500px',
+      data: {
+        ...org,
+        allOrgs: this.orgDataSource.data.filter(o => o.id !== org.id)
+      }
+    });
+
+    dialogRef.afterClosed().subscribe((resultat) => {
+      if (resultat && org.id) {
+        const payload = {
+          nom: resultat.nom,
+          typeOrganizationId: Number(resultat.typeOrganizationId),
+          idOrganizationSup: resultat.idOrganizationSup ? Number(resultat.idOrganizationSup) : null
+        };
+
+        this.orgService.updateOrganization(org.id, payload).subscribe({
+          next: () => {
+            this.chargerOrganizations();
+            this.orgUpdated.emit(); // 🔔 Notifie le parent de recharger l'arbre !
+          },
+          error: (err) => console.error('Erreur modification:', err)
+        });
+      }
+    });
+  }
+
+  // 👤 Modale de Manager
+  assignManager(org: Organization): void {
+    const dialogRef = this.dialog.open(AssignManagerDialogComponent, {
+      width: '420px',
+      data: { 
+        managerId: org.managerId || org.manager?.id || null, 
+        orgName: org.nom ,
+        allOrgs: this.orgDataSource.data
+      }
+    });
+
+    dialogRef.afterClosed().subscribe((selectedManagerId) => {
+      if (selectedManagerId === undefined || selectedManagerId === '') {
+        return;
+      }
+      const formattedId = selectedManagerId !== null ? Number(selectedManagerId) : null;
+      if (!org.id) {
+        console.error("ID d'organisation manquant");
+        return;
+      }
+      this.orgService.assignManager(org.id, formattedId).subscribe({
+        next: () => {
+          this.snackBar.open('Manager assigné avec succès !', 'Fermer', { duration: 3000 });
+          this.chargerOrganizations();
+          this.orgUpdated.emit(); // 🔔 Notifie le parent de recharger l'arbre !
+        },
+        error: (err) => {
+          const errorMessage = err.error?.message || 'Erreur lors de l\'affectation du manager.';
+          this.snackBar.open(errorMessage, 'Fermer', {
+            duration: 6000,
+            panelClass: ['error-snackbar']
+          });
+        }
+      });
+    });
+  }
+
+  // ❌ Suppression
+  deleteOrg(org: Organization): void {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '420px',
+      panelClass: 'custom-dialog-container',
+      data: {
+        title: 'Supprimer l\'organisation',
+        message: `Êtes-vous sûr de vouloir supprimer "${org.nom}" ?`,
+        confirmText: 'Oui, supprimer',
+        cancelText: 'Annuler'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe((confirme: boolean) => {
+      if (confirme) {
+        this.executerSuppression(org);
+      }
+    });
+  }
+
+  private executerSuppression(org: Organization): void {
+    this.orgService.deleteOrganization(org.id).subscribe({
+      next: () => {
+        this.snackBar.open(
+          `Organisation "${org.nom}" supprimée avec succès.`,
+          'Fermer',
+          {
+            duration: 4000,
+            horizontalPosition: 'end',
+            verticalPosition: 'bottom',
+            panelClass: ['bg-slate-900', 'text-white']
+          }
+        );
+        this.chargerOrganizations();
+        this.orgUpdated.emit();
+      },
+      error: (err) => {
+        console.error('Erreur suppression organisation:', err);
+        this.snackBar.open(
+          'Une erreur est survenue lors de la suppression.',
+          'Fermer',
+          {
+            duration: 4000,
+            horizontalPosition: 'end',
+            verticalPosition: 'bottom',
+            panelClass: ['bg-rose-600', 'text-white']
+          }
+        );
+      }
+    });
+  }
+}

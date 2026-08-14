@@ -1,0 +1,140 @@
+/* ==========================================
+   CARTE NOTIFICATIONS DYNAMIQUES (ÉLARGIE ET AÉRÉE)
+   ========================================== */
+.notification-menu-panel {
+  min-width: 390px !important;
+  max-width: 420px !important;
+  border-radius: 16px !important;
+  border: 1px solid var(--mat-sys-outline-variant, #e0e6eb) !important;
+  background: var(--mat-sys-surface, #ffffff) !important;
+  box-shadow: 0 12px 32px rgba(10, 8, 28, 0.12) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  font-family: "Manrope", sans-serif !important;
+
+  /* En-tête */
+  .notification-header {
+    padding: 16px 20px;
+    background: var(--mat-sys-surface, #ffffff);
+    border-bottom: 1px solid var(--mat-sys-outline-variant, #e0e6eb);
+  }
+
+  .notification-badge-pill {
+    background-color: var(--mat-sys-primary-fixed-dim, rgba(99, 91, 255, 0.15));
+    color: var(--mat-sys-primary, #635bff);
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+  }
+
+  /* Conteneur de la liste */
+  .notification-list-container {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 12px; /* Marge interne pour détacher les cartes */
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Espace net entre chaque carte de notification */
+  }
+
+  /* Chaque notification sous forme de carte distincte */
+  .notification-card-item {
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--mat-sys-outline-variant, #e0e6eb);
+    background-color: var(--mat-sys-surface, #ffffff);
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+
+    &:hover {
+      background-color: var(--mat-menu-item-hover-state-layer-color, #f6f9fc) !important;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+    }
+
+    /* Style spécifique pour les notifications non lues */
+    &.is-unread {
+      background-color: rgba(99, 91, 255, 0.05) !important;
+      border: 1.5px solid rgba(99, 91, 255, 0.3) !important;
+    }
+
+    /* Conteneur d'icône coloré */
+    .icon-box {
+      width: 38px;
+      height: 38px;
+      min-width: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &.box-warning {
+        background-color: #f8c20a26;
+        color: #d99b00;
+      }
+
+      &.box-success {
+        background-color: #36c76c26;
+        color: #28a745;
+      }
+
+      &.box-error {
+        background-color: var(--mat-sys-error-fixed-dim, rgba(248, 40, 90, 0.20));
+        color: var(--mat-sys-error, #f8285a);
+      }
+    }
+
+    .notif-title {
+      color: var(--mat-sys-on-background, #29343d);
+      font-weight: 700;
+      font-size: 13.5px;
+    }
+
+    .notif-message {
+      color: var(--mat-sys-surface-container-low, #526b7a);
+      font-size: 12.5px;
+      line-height: 1.4;
+      margin-top: 3px;
+    }
+
+    .notif-date {
+      color: #8c98a4;
+      font-size: 11px;
+      font-weight: 500;
+      margin-top: 6px;
+    }
+
+    /* Bouton supprimer garanti visible */
+    .btn-delete {
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      border-radius: 8px;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      color: #8c98a4;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      mat-icon {
+        font-size: 18px !important;
+        width: 18px !important;
+        height: 18px !important;
+        line-height: 18px !important;
+        color: #8c98a4;
+      }
+
+      &:hover {
+        background-color: rgba(248, 40, 90, 0.12) !important;
+        
+        mat-icon {
+          color: #f8285a !important;
+        }
+      }
+    }
+  }
+}

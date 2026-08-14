@@ -21,3 +21,7 @@
 
 @use "pages/auth";
 @use "pages/dashboards";
+@import "@angular/material/prebuilt-themes/indigo-pink.css";
+
+
+@import "tailwindcss";

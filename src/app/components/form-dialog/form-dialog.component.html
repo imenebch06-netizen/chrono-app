@@ -1,0 +1,89 @@
+<h2 mat-dialog-title class="f-s-20 f-w-600 m-b-16">
+  {{ formData.id ? 'Modifier l\'employé' : 'Ajouter un nouvel employé' }}
+</h2>
+
+<mat-dialog-content class="p-t-0">
+  <form #empForm="ngForm">
+    <div class="row m-t-8">
+
+      <!-- Nom -->
+      <div class="col-lg-6 m-b-16">
+        <mat-label class="f-w-600 m-b-8 d-block">Nom</mat-label>
+        <mat-form-field appearance="outline" class="w-100" color="primary">
+          <input matInput [(ngModel)]="formData.nom" name="nom" required placeholder="Ex: BENALI" />
+        </mat-form-field>
+      </div>
+
+      <!-- Prénom -->
+      <div class="col-lg-6 m-b-16">
+        <mat-label class="f-w-600 m-b-8 d-block">Prénom</mat-label>
+        <mat-form-field appearance="outline" class="w-100" color="primary">
+          <input matInput [(ngModel)]="formData.prenom" name="prenom" required placeholder="Ex: Karim" />
+        </mat-form-field>
+      </div>
+
+      <!-- Email -->
+      <div class="col-lg-6 m-b-16">
+        <mat-label class="f-w-600 m-b-8 d-block">Email</mat-label>
+        <mat-form-field appearance="outline" class="w-100" color="primary">
+          <input matInput type="email" [(ngModel)]="formData.email" name="email" required placeholder="Ex: karim.benali@company.com" />
+        </mat-form-field>
+      </div>
+
+      <!-- Mot de passe -->
+      <div class="col-lg-6 m-b-16">
+        <mat-label class="f-w-600 m-b-8 d-block">
+          Mot de passe {{ formData.id ? '(inchangé si vide)' : '' }}
+        </mat-label>
+        <mat-form-field appearance="outline" class="w-100" color="primary">
+          <input matInput type="password" [(ngModel)]="formData.password" name="password" autocomplete="current-password" [required]="!formData.id" placeholder="••••••••" />
+        </mat-form-field>
+      </div>
+
+      <!-- Adresse -->
+      <div class="col-lg-6 m-b-16">
+        <mat-label class="f-w-600 m-b-8 d-block">Adresse</mat-label>
+        <mat-form-field appearance="outline" class="w-100" color="primary">
+          <input matInput [(ngModel)]="formData.adress" name="adress" placeholder="Ex: Rue 14, Alger" />
+        </mat-form-field>
+      </div>
+
+      <!-- Rôle -->
+      <div class="col-lg-6 m-b-16">
+        <mat-label class="f-w-600 m-b-8 d-block">Rôle</mat-label>
+        <mat-form-field appearance="outline" class="w-100" color="primary">
+          <mat-select [(ngModel)]="formData.role" name="role" required placeholder="Sélectionner un rôle">
+            @for (r of roles; track r.value) {
+              <mat-option [value]="r.value">{{ r.viewValue }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <!-- 🟢 Organisation ID : Relié à formData.organizationId ! -->
+      <div class="col-lg-12 m-b-16">
+        <mat-label class="f-w-600 m-b-8 d-block">Organisation rattachée</mat-label>
+        <mat-form-field appearance="outline" class="w-100" color="primary">
+          <mat-select [(ngModel)]="formData.organizationId" name="organizationId" placeholder="Sélectionner une organisation">
+            <mat-option [value]="null">-- Aucune organisation --</mat-option>
+            @for (org of organizationsList; track org.id) {
+              <mat-option [value]="org.id">
+                {{ org.nom }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+    </div>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="p-b-16 p-x-24">
+  <button mat-stroked-button color="warn" class="m-r-8" (click)="fermer()">
+    Annuler
+  </button>
+  <button mat-flat-button color="primary" [disabled]="!empForm.valid" (click)="soumettreFormulaire()">
+    {{ formData.id ? 'Enregistrer' : 'Créer' }}
+  </button>
+</mat-dialog-actions>

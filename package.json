@@ -27,7 +27,8 @@
     "angular-tabler-icons": "^3.26.0",
     "apexcharts": "^4.7.0",
     "iconify": "^1.4.0",
-    "ng-apexcharts": "^1.16.0",
+    "ng-apexcharts": "^1.17.1",
+    "ngx-org-chart": "^1.1.1",
     "ngx-scrollbar": "^18.0.0",
     "postcss": "^8.5.6",
     "rxjs": "~7.8.2",
@@ -38,7 +39,7 @@
   },
   "devDependencies": {
     "@angular/build": "^21.0.4",
-    "@angular/cli": "~21.0.4",
+    "@angular/cli": "^21.2.21",
     "@angular/compiler-cli": "^21.0.6",
     "@types/chance": "^1.1.7",
     "@types/date-fns": "^2.6.3",
