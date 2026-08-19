@@ -70,6 +70,19 @@ export class DemandeAbsenceController {
     return this.demandeAbsenceService.findByEmploye(userId);
   }
 
+  @Get('demandes-valides/team')
+  @Roles('MANAGER')
+  @ApiOperation({
+    summary: 'Obtenir les demandes validées de son équipe (Manager)',
+    description: 'Retourne toutes les demandes VALIDE des employés appartenant à la branche hiérarchique du Manager.',
+  })
+  @ApiResponse({ status: 200, description: 'Liste des demandes validées pour le manager.' })
+  @ApiResponse({ status: 403, description: 'Accès réservé aux responsables d\'organisation.' })
+  async getValidatedForMyTeam(@CurrentUser() user: any) {
+    const userId = Number(user.id ?? user.sub);
+    return this.demandeAbsenceService.findAllApprovedTeam(userId);
+  }
+
   @Delete('mes-demandes/:id/annuler')
   @ApiOperation({
     summary: 'Annuler sa propre demande d\'absence',

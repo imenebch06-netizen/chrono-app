@@ -491,6 +491,44 @@ async findAllPending() {
     where: { id: demandeId },
   });
 }
+async findAllApprovedTeam(managerId: number) {
 
+// 1. Trouver l'organisation gérée par ce manager
+  const managedOrg = await this.prisma.organization.findFirst({
+    where: { managerId },
+  });
+
+  if (!managedOrg || !managedOrg.path) {
+    return [];
+  }
+
+  // 2. Récupérer les demandes validées des employés dans son arbre hiérarchique
+  return this.prisma.demandeAbsence.findMany({
+    where: {
+      status: 'VALIDE',
+      employeId: { not: managerId },
+      employe: {
+        organization: {
+          path: {
+            startsWith: managedOrg.path,
+          },
+        },
+      },
+    },
+    include: {
+      employe: {
+        select: {
+          id: true,
+          nom: true,
+          prenom: true,
+          email: true,
+          organization: { select: { id: true, nom: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+}
 
 }
