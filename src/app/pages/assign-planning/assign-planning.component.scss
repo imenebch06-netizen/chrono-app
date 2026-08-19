@@ -1,9 +1,4 @@
-:root {
-  --mat-sys-primary: rgb(99, 91, 255);              // Violet/bleu principal
-  --mat-sys-primary-fixed-dim: rgba(99, 91, 255, 0.15);
-  --mat-sys-secondary: rgb(22, 205, 199);           // Turquoise secondaire
-  --mat-sys-secondary-fixed-dim: rgba(22, 205, 199, 0.15);
-}
+
 
 .card-dash {
   border-radius: 12px;
@@ -16,7 +11,7 @@
   }
 
   .card-header {
-    background: linear-gradient(90deg, var(--mat-sys-primary), var(--mat-sys-secondary));
+    background: var(--mat-sys-primary);
     color: #fff;
     padding: 12px 16px;
 
@@ -53,7 +48,7 @@
 button[mat-flat-button] {
   border-radius: 8px;
   font-weight: 600;
-  background: linear-gradient(90deg, var(--mat-sys-primary), var(--mat-sys-secondary));
+  background: var(--mat-sys-primary);
   color: #fff;
 
   mat-icon {
@@ -62,6 +57,6 @@ button[mat-flat-button] {
   }
 
   &:hover {
-    background: linear-gradient(90deg, var(--mat-sys-secondary), var(--mat-sys-primary));
+    background: rgb(133, 127, 239);
   }
 }

@@ -16,6 +16,7 @@ import { MatBadgeModule } from '@angular/material/badge';
 import { AuthService } from 'src/app/services/auth.service';
 import { NotificationService, NotificationItem } from 'src/app/services/notification.service';
 import { CommonModule } from '@angular/common';
+import { UserAvatarPipe } from 'src/app/pipe/user-avatar.pipe';
 
 @Component({
   selector: 'app-header',
@@ -26,7 +27,8 @@ import { CommonModule } from '@angular/common';
     NgScrollbarModule,
     TablerIconsModule,
     MaterialModule,
-    MatBadgeModule
+    MatBadgeModule,
+    UserAvatarPipe
   ],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss'],

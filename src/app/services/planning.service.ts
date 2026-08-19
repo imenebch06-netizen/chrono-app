@@ -27,6 +27,14 @@ export class PlanningService {
   private apiUrl = 'http://localhost:3000/api/planning'; // Ajuste l'URL si nécessaire
 
   constructor(private http: HttpClient) {}
+  
+  getGlobalPlanning(startDate?: string, endDate?: string): Observable<PlanningItem[]> {
+    let params = new HttpParams();
+    if (startDate) params = params.set('startDate', startDate);
+    if (endDate) params = params.set('endDate', endDate);
+
+    return this.http.get<PlanningItem[]>(`${this.apiUrl}/global`, { params });
+  }
 
   // 1. Récupérer le planning personnel de l'utilisateur connecté
   getMonPlanning(startDate?: string, endDate?: string): Observable<PlanningItem[]> {

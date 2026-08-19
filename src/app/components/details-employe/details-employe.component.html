@@ -15,19 +15,19 @@
     <mat-card class="!bg-white !rounded-3xl !border !border-slate-100 !shadow-sm overflow-hidden w-full max-w-2xl mx-auto">
 
       <!-- En-tête de la Fiche Profil -->
-      <div class="relative bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 sm:p-8 text-white">
+      <div class="relative bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-10 sm:p-8 text-white">
         <!-- Cercle décoratif en arrière-plan -->
         <div class="absolute -right-6 -bottom-6 w-36 h-36 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
 
-        <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-x-40 gap-20">
           
           <!-- Avatar + Nom + ID -->
-          <div class="flex items-center gap-4 sm:gap-5">
+          <div class="flex items-center gap-x-40 gap-20 sm:gap-30">
             <!-- Avatar avec Initiales & Gradient -->
             <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-500 text-white flex items-center justify-center font-black text-2xl sm:text-3xl shadow-lg shadow-indigo-500/20 ring-4 ring-white/10 flex-shrink-0">
               {{ profile.prenom ? profile.prenom[0] : '' }}{{ profile.nom ? profile.nom[0] : '' }}
             </div>
-
+<hr><hr><hr><hr><hr><hr><hr><hr><hr><hr><hr><hr>
             <div class="min-w-0">
               <h2 class="text-xl sm:text-2xl font-black tracking-tight text-white truncate">
                 {{ profile.prenom }} <span class="uppercase">{{ profile.nom }}</span>
@@ -38,7 +38,6 @@
               </span>
             </div>
           </div>
-
           <!-- Badge de Rôle -->
           <div class="self-start sm:self-center">
             <span 
@@ -56,11 +55,11 @@
 
       <!-- Contenu des détails de l'employé -->
       <mat-card-content class="!p-6 sm:!p-8">
-        <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-20">
 
           <!-- Item 1: Email -->
-          <div class="p-4 bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-blue-200 rounded-2xl transition-all duration-200 flex items-center justify-between gap-4 group">
-            <div class="flex items-center gap-4 min-w-0">
+          <div class="p-15 bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-blue-200 rounded-2xl transition-all duration-200 flex items-center justify-between gap-10 group">
+            <div class="flex items-center gap-10 min-w-0">
               <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-200">
                 <mat-icon class="!w-5 !h-5 !text-xl">email</mat-icon>
               </div>
@@ -75,8 +74,8 @@
           </div>
 
           <!-- Item 2: Adresse -->
-          <div class="p-4 bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-emerald-200 rounded-2xl transition-all duration-200 flex items-center justify-between gap-4 group">
-            <div class="flex items-center gap-4 min-w-0">
+          <div class="p-15 bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-emerald-200 rounded-2xl transition-all duration-200 flex items-center justify-between gap-10 group">
+            <div class="flex items-center gap-10 min-w-0">
               <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-200">
                 <mat-icon class="!w-5 !h-5 !text-xl">location_on</mat-icon>
               </div>
@@ -91,8 +90,8 @@
           </div>
 
           <!-- Item 3: Organisation -->
-          <div class="p-4 bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-amber-200 rounded-2xl transition-all duration-200 flex items-center justify-between gap-4 group">
-            <div class="flex items-center gap-4 min-w-0">
+          <div class="p-15 bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-amber-200 rounded-2xl transition-all duration-200 flex items-center justify-between gap-10 group">
+            <div class="flex items-center gap-10 min-w-0">
               <div class="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:bg-amber-600 group-hover:text-white transition-all duration-200">
                 <mat-icon class="!w-5 !h-5 !text-xl">corporate_fare</mat-icon>
               </div>

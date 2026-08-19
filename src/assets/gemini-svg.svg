@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <!-- Fond Icône avec coins arrondis -->
+  <rect x="0" y="0" width="100" height="100" rx="28" fill="#EEF2FF"/>
+  
+  <!-- Cadran Horloge C -->
+  <path d="M 68 32 A 26 26 0 1 0 68 68" 
+        fill="none" 
+        stroke="#4338CA" 
+        stroke-width="8" 
+        stroke-linecap="round"/>
+  
+  <!-- Aiguilles -->
+  <path d="M 50 50 L 50 34 M 50 50 L 62 50" 
+        stroke="#4338CA" 
+        stroke-width="6" 
+        stroke-linecap="round"/>
+</svg>

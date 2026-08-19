@@ -42,7 +42,14 @@ export interface MembreStatSummary {
   soldeConges: number;
   soldeRtt: number;
   creditDebit: number;
-  statutAujourdhui: 'PRESENT' | 'CONGE' | 'ABSENT';
+  statutAujourdhui:
+    | 'PRESENT'
+    | 'CONGE'
+    | 'RECUPERATION'
+    | 'REPOS'
+    | 'ABSENT_JUSTIFIE'
+    | 'ABSENT_NON_JUSTIFIE'
+    | 'NON_ASSIGNEE';
 }
 
 // --- 3. STATS GLOBALES (ADMIN) ---

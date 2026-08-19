@@ -15,9 +15,9 @@
       <!-- Bouton Import Excel (UNIQUEMENT POUR ADMIN) -->
       <div *ngIf="isAdmin" class="d-flex align-items-center gap-12">
         <input type="file" #fileInput (change)="onFileSelected($event)" accept=".xlsx, .xls" hidden>
-        <button mat-flat-button color="primary" [disabled]="isUploading" (click)="fileInput.click()">
-          <i-tabler name="file-upload" class="icon-18 m-r-8"></i-tabler>
-          <span>{{ isUploading ? 'Importation...' : 'Importer Fichier Excel' }}</span>
+        <button mat-flat-button style=" background-color: var(--mat-sys-primary);" [disabled]="isUploading" (click)="fileInput.click()">
+          <i-tabler name="file-upload" style="color:white" class="icon-18 m-r-8"></i-tabler>
+          <span style="color:white">{{ isUploading ? 'Importation...' : 'Importer Fichier Excel' }}</span>
         </button>
       </div>
 

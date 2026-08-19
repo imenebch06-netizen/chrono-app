@@ -12,7 +12,11 @@ import { TeamStatsComponent } from './pages/team-stats/team-stats.component';
 import { PersonalStatsComponent } from './pages/personal-stats/personal-stats.component';
 
 export const routes: Routes = [
-  // 🟢 1. RACCOURCI DIRECT CONNEXION
+ {
+    path: '',
+    redirectTo: 'authentication/login',
+    pathMatch: 'full',
+  },
   {
     path: 'login',
     redirectTo: 'authentication/login',

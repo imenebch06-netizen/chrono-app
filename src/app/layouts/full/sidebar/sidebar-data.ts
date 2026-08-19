@@ -102,6 +102,7 @@ export const navItems: NavItem[] = [
     iconName: 'solar:users-group-rounded-bold-duotone', 
     route: '/mes-employes',
     roles: ['ADMIN']
+    
   },
   {
     displayName: 'Organisations', 
@@ -113,6 +114,11 @@ export const navItems: NavItem[] = [
     displayName: 'Structure Entreprise', 
     iconName: 'solar:diagram-up-bold-duotone', 
     route: '/org-tree', 
+    roles: ['ADMIN']
+  },{
+    displayName: 'Pointages Globaux',
+    iconName: 'solar:history-bold-duotone',
+    route: '/pointages',
     roles: ['ADMIN']
   }
 ];

@@ -144,21 +144,20 @@
       box-shadow: none !important;
     ">
     
-    <img 
-      src="/assets/images/profile/user-1.jpg" 
-      alt="Photo de profil" 
-      width="35"
-      height="35"
-      style="
-        width: 35px !important;
-        height: 35px !important;
-        border-radius: 50% !important;
-        object-fit: cover !important;
-        display: block !important;
-        margin: 0 !important;
-        padding: 0 !important;
-      " 
-    />
+   <img 
+  [src]="currentUser | userAvatar" 
+  (error)="$any($event.target).src = 'assets/images/profile/user-1.jpg'"
+  alt="Photo de profil" 
+  width="35"
+  height="35"
+  style="
+    width: 35px !important;
+    height: 35px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    display: block !important;
+  " 
+/>
   </button>
 
 </div>

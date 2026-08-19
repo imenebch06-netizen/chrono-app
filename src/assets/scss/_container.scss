@@ -39,9 +39,9 @@ body {
 }
 
 .body-wrapper {
-  border-radius: 20px;
+  border-radius: $border-radius;
   background-color: $layout-bg;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   min-height: calc(100% - 48px);
 }
 
@@ -78,12 +78,18 @@ body {
 }
 
 .pageWrapper {
-  padding: 16px;
+  padding: 24px;
   min-height: calc(100vh - 38px);
   margin: 0 auto;
 
   &.maxWidth {
     max-width: $boxedWidth;
+  }
+}
+
+@media (max-width: 767px) {
+  .pageWrapper {
+    padding: 16px;
   }
 }
 
