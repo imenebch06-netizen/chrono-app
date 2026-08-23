@@ -1,188 +1,185 @@
-<div class="min-h-screen bg-slate-50/50 p-4 sm:p-6 lg:p-8 space-y-6">
-  
+<div class="min-h-screen bg-[var(--mat-sys-surface-bright)] p-4 sm:p-6 lg:p-8 space-y-6">
+
   <!-- En-tête de la page -->
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-8 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[var(--mat-sys-surface)] p-6 rounded-2xl border border-[var(--mat-sys-outline)] shadow-sm">
     <div>
-      <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">Mon Profil</h1>
-      <p class="text-sm text-slate-500 mt-1">
+      <h1 class="text-xl sm:text-2xl font-extrabold text-[var(--mat-sys-on-background)] tracking-tight">Mon Profil</h1>
+      <p class="text-xs sm:text-sm text-[var(--mat-sys-on-background)]/60 mt-0.5">
         Consultez et vérifiez vos informations personnelles.
       </p>
     </div>
-    <div class="flex items-center gap-2 self-start sm:self-auto px-3.5 py-1.5 bg-slate-100 border border-slate-200 rounded-full text-xs font-semibold text-slate-600">
-      <mat-icon class="!w-4 !h-4 !text-base text-slate-500">verified_user</mat-icon>
+    <div class="flex items-center gap-2 self-start sm:self-auto px-3.5 py-1.5 bg-[var(--mat-sys-primary-fixed-dim)] border border-[var(--mat-sys-primary)]/20 rounded-full text-[11px] font-semibold text-[var(--mat-sys-primary)]">
+      <mat-icon class="!w-3.5 !h-3.5 !text-sm">verified_user</mat-icon>
       <span>Compte Sécurisé</span>
     </div>
   </div>
 
   <!-- Carte Unifiée Profil -->
-  <mat-card class="!bg-white !rounded-3xl !border !border-slate-100 !shadow-sm overflow-hidden w-full">
+  <mat-card class="!bg-[var(--mat-sys-surface)] !rounded-2xl !border !border-[var(--mat-sys-outline)] !shadow-sm overflow-hidden w-full">
 
     <!-- 1. Spinner au chargement -->
     @if (isLoading()) {
       <div class="flex flex-col justify-center items-center p-12 sm:p-16 min-h-[350px] gap-3">
         <mat-spinner diameter="44"></mat-spinner>
-        <p class="text-xs font-medium text-slate-400 animate-pulse">Chargement de vos informations...</p>
+        <p class="text-xs font-medium text-[var(--mat-sys-on-background)]/40 animate-pulse">Chargement de vos informations...</p>
       </div>
     }
 
     <!-- 2. Message d'erreur -->
     @else if (errorMessage()) {
       <div class="p-8 sm:p-12 text-center flex flex-col items-center justify-center min-h-[350px] gap-2">
-        <div class="p-3 bg-rose-50 rounded-2xl">
-          <mat-icon class="!w-8 !h-8 !text-3xl text-rose-500">error_outline</mat-icon>
+        <div class="p-3 bg-[#FCE8E9] rounded-xl">
+          <mat-icon class="!w-8 !h-8 !text-3xl text-[#E4585F]">error_outline</mat-icon>
         </div>
-        <p class="text-base font-bold text-rose-600 mt-2">{{ errorMessage() }}</p>
+        <p class="text-sm font-bold text-[#E4585F] mt-2">{{ errorMessage() }}</p>
       </div>
     }
 
     <!-- 3. Affichage du profil -->
     @else if (user(); as profile) {
 
-      <!-- En-tête de carte avec bannière dégradée Hero -->
-      <div class="relative bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 sm:p-8 text-white overflow-hidden">
-        
-        <!-- Forme décorative d'arrière-plan -->
-        <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <!-- En-tête BANNIÈRE HERO (Structure Repensée & Aérée) -->
+      <div class="relative bg-gradient-to-br from-[#1c1a2e] via-[#2a2650] to-[#141224] p-8 sm:p-10 text-white overflow-hidden">
 
-        <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-12 sm:gap-8">
-          
-          <!-- Avatar + Nom + ID -->
-          <div class="flex items-center gap-8 sm:gap-8">
-            <!-- Avatar avec initiales et statut -->
-            <div class="relative flex-shrink-2">
-              <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-500 text-white flex items-center justify-center font-black text-2xl sm:text-3xl shadow-xl shadow-indigo-500/20 ring-4 ring-white/10">
+        <!-- Forme décorative d'arrière-plan -->
+        <div class="absolute -right-12 -bottom-12 w-56 h-56 bg-[var(--mat-sys-primary)]/15 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="relative z-10 flex flex-col gap-8">
+
+          <!-- Barre Supérieure : ID et Badges totalement séparés aux extrémités -->
+          <div class="flex items-center justify-between w-full border-b border-white/10 pb-5">
+            <span class="inline-flex items-center gap-2 text-[11px] font-medium tracking-wide text-slate-300 bg-white/10 px-3.5 py-1.5 rounded-full backdrop-blur-md border border-white/10">
+              <mat-icon class="!w-3.5 !h-3.5 !text-sm text-[#B5B0FF]">fingerprint</mat-icon>
+              ID Utilisateur : #{{ profile.id }}
+            </span>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <span
+                class="px-4 py-1.5 rounded-full text-[11px] font-bold tracking-wider uppercase border shadow-sm"
+                [ngClass]="profile.role === 'ADMIN'
+                  ? 'bg-[var(--mat-sys-primary)]/25 text-white border-[var(--mat-sys-primary)]/40 backdrop-blur-md'
+                  : 'bg-white/10 text-slate-200 border-white/20 backdrop-blur-md'">
+                {{ profile.role }}
+              </span>
+              @if (profile.organizationGeree) {
+                <span class="px-4 py-1.5 rounded-full text-[11px] font-bold tracking-wider uppercase bg-white/10 text-[#B5B0FF] border border-[var(--mat-sys-primary)]/30 backdrop-blur-md">
+                  MANAGER
+                </span>
+              }
+            </div>
+          </div>
+
+          <!-- Section Principale : Avatar & Nom -->
+          <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6 sm:gap-8">
+            <div class="relative flex-shrink-0">
+              <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-[var(--mat-sys-primary)] to-[#9A94FE] text-white flex items-center justify-center font-black text-xl sm:text-2xl shadow-xl shadow-[var(--mat-sys-primary)]/20 ring-4 ring-white/10">
                 {{ profile.prenom ? profile.prenom[0] : '' }}{{ profile.nom ? profile.nom[0] : '' }}
               </div>
-              <span class="absolute -bottom-1 -right-1 w-4 sm:w-5 h-4 sm:h-5 bg-emerald-500 border-2 border-slate-900 rounded-full"></span>
-              
+              <span class="absolute -bottom-1 -right-1 w-4 h-4 bg-[var(--mat-sys-primary)] border-2 border-[#1c1a2e] rounded-full"></span>
             </div>
-            
-           <hr><hr><hr><hr><hr><hr><hr> <hr><hr><hr><hr><hr><hr><hr><hr><hr><hr><hr><hr><hr><hr><hr><hr><hr><hr><hr><hr><hr>
-            <div class="min-w-0">
+
+            <div class="min-w-0 space-y-1">
               <h2 class="text-xl sm:text-2xl font-black tracking-tight text-white truncate">
                 {{ profile.prenom }} {{ profile.nom }}
               </h2>
-              <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-300 bg-white/10 px-3 py-1 rounded-full mt-1.5 backdrop-blur-sm border border-white/10">
-                <mat-icon class="!w-3.5 !h-3.5 !text-sm text-indigo-300">fingerprint</mat-icon>
-                ID Utilisateur : #{{ profile.id }}
-              </span>
-              
+              <span class="text-xs text-slate-300/80 font-medium block">Espace personnel et paramètres du compte</span>
             </div>
-            
-          </div>
-          
-          
-          <div class="flex flex-wrap items-center gap-y-3 self-start sm:self-auto gap-x-50">
-            <span 
-              class="px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase shadow-sm border"
-              [ngClass]="profile.role === 'ADMIN' 
-                ? 'bg-rose-500/20 text-rose-300 border-rose-500/30 backdrop-blur-md' 
-                : 'bg-blue-500/20 text-blue-300 border-blue-500/30 backdrop-blur-md'">
-              {{ profile.role }}
-            </span>
-             @if (profile.organizationGeree) {
-              <span class="px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30 backdrop-blur-md">
-                MANAGER
-              </span>
-            }
-           
           </div>
 
         </div>
       </div>
 
-      <!-- Contenu des informations personnelles (Grille Adaptative) -->
-      <mat-card-content class="!p-6 sm:!p-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-30 sm:gap-8">
+     <!-- Contenu des informations personnelles (Ultra aéré & Polices/Icônes réduites) -->
+<mat-card-content class="!p-12 sm:!p-16">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-10">
 
-          <!-- Item 1: Adresse Email -->
-          <div class="p-10 sm:p-5 bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-blue-200 rounded-2xl transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-20 group hover:shadow-md hover:shadow-blue-500/5">
-            <div class="flex items-center gap-8 min-w-0">
-              <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-200">
-                <mat-icon class="!w-6 !h-6 !text-2xl">email</mat-icon>
-              </div>
-              <br>
-              <div class="min-w-0 flex-1 gap-10">
-                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block py-3">Adresse Email</span>
-                <span class="text-sm sm:text-base font-bold text-slate-800 truncate block mt-0.5">{{ profile.email }}</span>
-              </div>
-            </div>
-            <span class="self-start sm:self-center px-3 py-1 bg-blue-50 text-blue-700 border border-blue-100 rounded-full text-xs font-semibold flex-shrink-0">
-              Contact principal
-            </span>
-      
-          </div>
-
-          <!-- Item 2: Adresse -->
-          <div class="p-10 sm:p-5 bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-emerald-200 rounded-2xl transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-20 group hover:shadow-md hover:shadow-emerald-500/5">
-            <div class="flex items-center gap-8 min-w-0">
-              <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-200">
-                <mat-icon class="!w-6 !h-6 !text-2xl">location_on</mat-icon>
-              </div>
-              <div class="min-w-0 flex-1">
-                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block py-3">Adresse</span>
-                <span class="text-sm sm:text-base font-bold text-slate-800 block mt-0.5">{{ profile.adress || 'Non renseignée' }}</span>
-              </div>
-            </div>
-            <span class="self-start sm:self-center px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full text-xs font-semibold flex-shrink-0">
-              Domicile
-            </span>
-          </div>
-          <!-- Item 3: Organisation de rattachement -->
-          @if (profile.organization) {
-            <div class="p-4 sm:p-5 bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-amber-200 rounded-2xl transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-20 group hover:shadow-md hover:shadow-amber-500/5">
-              <div class="flex items-center gap-8 min-w-0">
-                <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:bg-amber-600 group-hover:text-white transition-all duration-200">
-                  <mat-icon class="!w-6 !h-6 !text-2xl">corporate_fare</mat-icon>
-                </div>
-                <div class="min-w-0 flex-1">
-                  <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block py-3">Rattaché à</span>
-                  <span class="text-sm sm:text-base font-bold text-slate-800 truncate block mt-0.5">{{ profile.organization.nom }}</span>
-                </div>
-              </div>
-              <span class="self-start sm:self-center px-3 py-1 bg-amber-50 text-amber-700 border border-amber-100 rounded-full text-xs font-semibold flex-shrink-0">
-                {{ profile.organization.typeOrganization?.libelle || 'Entité' }}
-              </span>
-            </div>
-          }
-         
-          <!-- Item 4: Organisation Gérée (Si Manager) -->
-          @if (profile.organizationGeree) {
-            <div class="p-4 sm:p-5 bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-purple-200 rounded-2xl transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-20 group hover:shadow-md hover:shadow-purple-500/5">
-              <div class="flex items-center gap-8 min-w-0">
-                <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:bg-purple-600 group-hover:text-white transition-all duration-200">
-                  <mat-icon class="!w-6 !h-6 !text-2xl">supervisor_account</mat-icon>
-                </div>
-                <div class="min-w-0 flex-1">
-                  <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block py-3">Responsable de l'entité</span>
-                  <span class="text-sm sm:text-base font-bold text-slate-800 truncate block mt-0.5">{{ profile.organizationGeree.nom }}</span>
-                </div>
-              </div>
-              <span class="self-start sm:self-center px-3 py-1 bg-purple-50 text-purple-700 border border-purple-100 rounded-full text-xs font-semibold flex-shrink-0">
-                Management
-              </span>
-            </div>
-          }
-
-          <!-- Item 5: Date d'inscription -->
-          <div class="p-4 sm:p-5 bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-indigo-200 rounded-2xl transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-20 group hover:shadow-md hover:shadow-indigo-500/5"
-               [class.md:col-span-2]="!profile.organizationGeree">
-            <div class="flex items-center gap-8 min-w-0">
-              <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-200">
-                <mat-icon class="!w-6 !h-6 !text-2xl">calendar_today</mat-icon>
-              </div>
-              <div class="min-w-0 flex-1">
-                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block py-3">Membre depuis</span>
-                <span class="text-sm sm:text-base font-bold text-slate-800 block mt-0.5">{{ profile.createdAt | date:'dd/MM/yyyy' }}</span>
-              </div>
-            </div>
-            <span class="self-start sm:self-center px-3 py-1 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-full text-xs font-semibold flex-shrink-0">
-              Ancienneté
-            </span>
-          </div>
-
+    <!-- Item 1: Adresse Email -->
+    <div class="p-8 sm:p-10 bg-[var(--mat-sys-surface-container-lowest)] hover:bg-[var(--mat-sys-surface)] border border-[var(--mat-sys-outline)] hover:border-[var(--mat-sys-primary)]/40 rounded-2xl transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-8 group">
+      <div class="flex items-center gap-8 min-w-0">
+        <div class="w-8 h-8 rounded-lg bg-[var(--mat-sys-primary-fixed-dim)] text-[var(--mat-sys-primary)] flex items-center justify-center flex-shrink-0 group-hover:scale-105 group-hover:bg-[var(--mat-sys-primary)] group-hover:text-white transition-all duration-200">
+          <mat-icon class="!w-4 !h-4 !text-base flex items-center justify-center">email</mat-icon>
         </div>
-      </mat-card-content>
+        <div class="min-w-0 flex-1 space-y-1">
+          <span class="text-[9px] font-bold uppercase tracking-widest text-[var(--mat-sys-on-background)]/40 block">Adresse Email</span>
+          <span class="text-xs font-bold text-[var(--mat-sys-on-background)] truncate block">{{ profile.email }}</span>
+        </div>
+      </div>
+      <span class="self-start sm:self-center px-4 py-1.5 bg-[var(--mat-sys-primary-fixed-dim)] text-[var(--mat-sys-primary)] border border-[var(--mat-sys-primary)]/20 rounded-full text-[10px] font-semibold flex-shrink-0">
+        Contact principal
+      </span>
+    </div>
+
+    <!-- Item 2: Adresse -->
+    <div class="p-8 sm:p-10 bg-[var(--mat-sys-surface-container-lowest)] hover:bg-[var(--mat-sys-surface)] border border-[var(--mat-sys-outline)] hover:border-[var(--mat-sys-primary)]/40 rounded-2xl transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-8 group">
+      <div class="flex items-center gap-8 min-w-0">
+        <div class="w-8 h-8 rounded-lg bg-[var(--mat-sys-primary-fixed-dim)] text-[var(--mat-sys-primary)] flex items-center justify-center flex-shrink-0 group-hover:scale-105 group-hover:bg-[var(--mat-sys-primary)] group-hover:text-white transition-all duration-200">
+          <mat-icon class="!w-4 !h-4 !text-base flex items-center justify-center">location_on</mat-icon>
+        </div>
+        <div class="min-w-0 flex-1 space-y-1">
+          <span class="text-[9px] font-bold uppercase tracking-widest text-[var(--mat-sys-on-background)]/40 block">Adresse</span>
+          <span class="text-xs font-bold text-[var(--mat-sys-on-background)] block">{{ profile.adress || 'Non renseignée' }}</span>
+        </div>
+      </div>
+      <span class="self-start sm:self-center px-4 py-1.5 bg-[var(--mat-sys-primary-fixed-dim)] text-[var(--mat-sys-primary)] border border-[var(--mat-sys-primary)]/20 rounded-full text-[10px] font-semibold flex-shrink-0">
+        Domicile
+      </span>
+    </div>
+
+    <!-- Item 3: Organisation de rattachement -->
+    @if (profile.organization) {
+      <div class="p-8 sm:p-10 bg-[var(--mat-sys-surface-container-lowest)] hover:bg-[var(--mat-sys-surface)] border border-[var(--mat-sys-outline)] hover:border-[var(--mat-sys-primary)]/40 rounded-2xl transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-8 group">
+        <div class="flex items-center gap-8 min-w-0">
+          <div class="w-8 h-8 rounded-lg bg-[var(--mat-sys-primary-fixed-dim)] text-[var(--mat-sys-primary)] flex items-center justify-center flex-shrink-0 group-hover:scale-105 group-hover:bg-[var(--mat-sys-primary)] group-hover:text-white transition-all duration-200">
+            <mat-icon class="!w-4 !h-4 !text-base flex items-center justify-center">corporate_fare</mat-icon>
+          </div>
+          <div class="min-w-0 flex-1 space-y-1">
+            <span class="text-[9px] font-bold uppercase tracking-widest text-[var(--mat-sys-on-background)]/40 block">Rattaché à</span>
+            <span class="text-xs font-bold text-[var(--mat-sys-on-background)] truncate block">{{ profile.organization.nom }}</span>
+          </div>
+        </div>
+        <span class="self-start sm:self-center px-4 py-1.5 bg-[var(--mat-sys-primary-fixed-dim)] text-[var(--mat-sys-primary)] border border-[var(--mat-sys-primary)]/20 rounded-full text-[10px] font-semibold flex-shrink-0">
+          {{ profile.organization.typeOrganization?.libelle || 'Entité' }}
+        </span>
+      </div>
+    }
+
+    <!-- Item 4: Organisation Gérée (Si Manager) -->
+    @if (profile.organizationGeree) {
+      <div class="p-8 sm:p-10 bg-[var(--mat-sys-surface-container-lowest)] hover:bg-[var(--mat-sys-surface)] border border-[var(--mat-sys-outline)] hover:border-[var(--mat-sys-primary)]/40 rounded-2xl transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-8 group">
+        <div class="flex items-center gap-8 min-w-0">
+          <div class="w-8 h-8 rounded-lg bg-[var(--mat-sys-primary-fixed-dim)] text-[var(--mat-sys-primary)] flex items-center justify-center flex-shrink-0 group-hover:scale-105 group-hover:bg-[var(--mat-sys-primary)] group-hover:text-white transition-all duration-200">
+            <mat-icon class="!w-4 !h-4 !text-base flex items-center justify-center">supervisor_account</mat-icon>
+          </div>
+          <div class="min-w-0 flex-1 space-y-1">
+            <span class="text-[9px] font-bold uppercase tracking-widest text-[var(--mat-sys-on-background)]/40 block">Responsable de l'entité</span>
+            <span class="text-xs font-bold text-[var(--mat-sys-on-background)] truncate block">{{ profile.organizationGeree.nom }}</span>
+          </div>
+        </div>
+        <span class="self-start sm:self-center px-4 py-1.5 bg-[var(--mat-sys-primary-fixed-dim)] text-[var(--mat-sys-primary)] border border-[var(--mat-sys-primary)]/20 rounded-full text-[10px] font-semibold flex-shrink-0">
+          Management
+        </span>
+      </div>
+    }
+
+    <!-- Item 5: Date d'inscription -->
+    <div class="p-8 sm:p-10 bg-[var(--mat-sys-surface-container-lowest)] hover:bg-[var(--mat-sys-surface)] border border-[var(--mat-sys-outline)] hover:border-[var(--mat-sys-primary)]/40 rounded-2xl transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-8 group"
+         [class.md:col-span-2]="!profile.organizationGeree">
+      <div class="flex items-center gap-8 min-w-0">
+        <div class="w-8 h-8 rounded-lg bg-[var(--mat-sys-primary-fixed-dim)] text-[var(--mat-sys-primary)] flex items-center justify-center flex-shrink-0 group-hover:scale-105 group-hover:bg-[var(--mat-sys-primary)] group-hover:text-white transition-all duration-200">
+          <mat-icon class="!w-4 !h-4 !text-base flex items-center justify-center">calendar_today</mat-icon>
+        </div>
+        <div class="min-w-0 flex-1 space-y-1">
+          <span class="text-[9px] font-bold uppercase tracking-widest text-[var(--mat-sys-on-background)]/40 block">Membre depuis</span>
+          <span class="text-xs font-bold text-[var(--mat-sys-on-background)] block">{{ profile.createdAt | date:'dd/MM/yyyy' }}</span>
+        </div>
+      </div>
+      <span class="self-start sm:self-center px-4 py-1.5 bg-[var(--mat-sys-primary-fixed-dim)] text-[var(--mat-sys-primary)] border border-[var(--mat-sys-primary)]/20 rounded-full text-[10px] font-semibold flex-shrink-0">
+        Ancienneté
+      </span>
+    </div>
+
+  </div>
+</mat-card-content>
 
     }
 
