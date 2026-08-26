@@ -21,7 +21,6 @@ import { TeamStats } from '../../models/statistiques.model';
   template: `
     <div class="p-6 space-y-8 bg-[var(--mat-sys-surface-bright)] min-h-screen">
       @if (teamStats(); as t) {
-        <!-- En-tête -->
         <div class="flex items-center justify-between">
           <div>
             <h1 class="text-3xl font-extrabold text-[var(--mat-sys-on-background)] tracking-tight">Statistiques de l'Équipe</h1>
@@ -29,9 +28,7 @@ import { TeamStats } from '../../models/statistiques.model';
           </div>
         </div>
 
-        <!-- Grille de Cartes KPI -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <!-- Total Membres -->
           <div class="bg-[var(--mat-sys-surface)] p-4 rounded-xl shadow-sm border border-[var(--mat-sys-outline)] flex items-center justify-between relative overflow-hidden group hover:shadow-md transition">
             <div class="space-y-1 z-10">
               <span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--mat-sys-on-background)]/50">Total Membres</span>
@@ -43,7 +40,6 @@ import { TeamStats } from '../../models/statistiques.model';
             <div class="absolute bottom-0 left-0 right-0 h-[3px] bg-[var(--mat-sys-primary)]"></div>
           </div>
 
-          <!-- Présents -->
           <div class="bg-[var(--mat-sys-surface)] p-4 rounded-xl shadow-sm border border-[var(--mat-sys-outline)] flex items-center justify-between relative overflow-hidden group hover:shadow-md transition">
             <div class="space-y-1 z-10">
               <span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--mat-sys-on-background)]/50">Présents Aujourd'hui</span>
@@ -55,7 +51,6 @@ import { TeamStats } from '../../models/statistiques.model';
             <div class="absolute bottom-0 left-0 right-0 h-[3px] bg-[var(--mat-sys-primary)]"></div>
           </div>
 
-          <!-- Absents / Congés -->
           <div class="bg-[var(--mat-sys-surface)] p-4 rounded-xl shadow-sm border border-[var(--mat-sys-outline)] flex items-center justify-between relative overflow-hidden group hover:shadow-md transition">
             <div class="space-y-1 z-10">
               <span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--mat-sys-on-background)]/50">Absents / Congés</span>
@@ -67,7 +62,6 @@ import { TeamStats } from '../../models/statistiques.model';
             <div class="absolute bottom-0 left-0 right-0 h-[3px] bg-[var(--mat-sys-primary)]"></div>
           </div>
 
-          <!-- Demandes -->
           <div class="bg-[var(--mat-sys-surface)] p-4 rounded-xl shadow-sm border border-[var(--mat-sys-outline)] flex items-center justify-between relative overflow-hidden group hover:shadow-md transition">
             <div class="space-y-1 z-10">
               <span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--mat-sys-on-background)]/50">Demandes à Valider</span>
@@ -80,7 +74,6 @@ import { TeamStats } from '../../models/statistiques.model';
           </div>
         </div>
 
-        <!-- Graphique -->
         <div class="bg-[var(--mat-sys-surface)] p-6 rounded-xl shadow-sm border border-[var(--mat-sys-outline)]">
           <h2 class="text-lg font-bold text-[var(--mat-sys-on-background)] mb-6 flex items-center gap-2">
             <mat-icon class="text-[var(--mat-sys-primary)]">bar_chart</mat-icon>
@@ -111,7 +104,6 @@ export class TeamStatsComponent implements OnInit {
   private statsService = inject(StatistiquesService);
   teamStats = signal<TeamStats | null>(null);
 
-  // Dégradé monochrome basé sur la couleur primaire de la charte (une teinte par barre)
   chartColors = ['#6A62FD', '#8F88FF', '#B5B0FF', '#DAD7FF', '#EDEBFF'];
 
   typeAbsenceSeries: ApexAxisChartSeries = [];
@@ -127,8 +119,17 @@ export class TeamStatsComponent implements OnInit {
   ngOnInit(): void {
     this.statsService.getTeamStats().subscribe((data) => {
       this.teamStats.set(data);
-      this.typeAbsenceSeries = [{ name: 'Nombre d\'absences', data: data.absencesParType.series }];
-      this.typeAbsenceXAxis = { ...this.typeAbsenceXAxis, categories: data.absencesParType.labels };
+      
+      this.typeAbsenceSeries = [
+        { 
+          name: 'Nombre d\'absences', 
+          data: [...data.absencesParType.series] 
+        }
+      ];
+      this.typeAbsenceXAxis = { 
+        ...this.typeAbsenceXAxis, 
+        categories: [...data.absencesParType.labels] 
+      };
     });
   }
 }

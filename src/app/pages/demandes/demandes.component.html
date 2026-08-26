@@ -19,7 +19,7 @@
         
         <!-- Formulaire de soumission -->
         <div class="col-lg-5 col-md-12 m-b-24">
-          <mat-card class="cardWithShadow overflow-hidden h-100">
+          <mat-card class="cardWithShadow h-100">
             <mat-card-header class="p-24 bg-light-primary">
               <mat-card-title class="f-s-18 f-w-600 text-primary">Nouvelle Demande</mat-card-title>
             </mat-card-header>
@@ -65,7 +65,7 @@
                   </div>
                 }
 
-               <!-- 4. Dates dynamique (Single Date pour Récupération / Range pour Congé et Absence) -->
+                <!-- 4. Dates dynamic -->
                 @if (demandeForm.get('typeDemande')?.value === 'RECUPERATION') {
                   <div class="row m-b-16">
                     <div class="col-12">
@@ -102,7 +102,7 @@
                   </div>
                 </div>
 
-                <!-- 6. Justificatif (Bouton d'import épuré) -->
+                <!-- 6. Justificatif -->
                 <div class="row m-b-24">
                   <div class="col-12">
                     <label class="f-s-12 text-muted d-block f-w-600 m-b-8">JUSTIFICATIF (OPTIONNEL)</label>
@@ -122,14 +122,15 @@
           </mat-card>
         </div>
 
-        <!-- Liste des demandes personnelles -->
+        <!-- Liste des demandes personnelles avec scroll vertical -->
         <div class="col-lg-7 col-md-12 m-b-24">
-          <mat-card class="cardWithShadow overflow-hidden h-100">
+          <mat-card class="cardWithShadow h-100">
             <mat-card-header class="p-24 bg-light">
               <mat-card-title class="f-s-18 f-w-600">Historique de mes Demandes</mat-card-title>
             </mat-card-header>
 
-            <mat-card-content class="p-24">
+            <!-- Scrollbar verticale activée ici -->
+            <mat-card-content class="p-24" style="max-height: 620px; overflow-y: auto;">
               @if (isLoading()) {
                 <div class="text-center p-24"><mat-spinner diameter="30"></mat-spinner></div>
               } @else if (mesDemandes().length === 0) {
@@ -138,33 +139,37 @@
                   <span class="f-s-12 text-muted">Vos demandes apparaîtront ici après envoi.</span>
                 </div>
               } @else {
-                <div class="d-flex flex-column gap-12 m-t-16">
+                <div class="m-t-16" style="display: flex; flex-direction: column; gap: 12px;">
                   @for (item of mesDemandes(); track item.id) {
-                    <div class="p-16 bg-light rounded d-flex align-items-center justify-content-between flex-wrap gap-12">
-                      <div>
-                        <div class="d-flex align-items-center gap-8 m-b-4">
-                          <strong class="f-s-14 text-dark">{{ item.typeDemande }}</strong>
-                          <span class="f-s-12 p-x-8 p-y-2 rounded-pill"
-                                [ngClass]="{
-                                  'bg-light-warning text-warning': item.status === statuts.EN_ATTENTE,
-                                  'bg-light-success text-success': item.status === statuts.VALIDE,
-                                  'bg-light-error text-error': item.status === statuts.REFUSE
-                                }">
-                            {{ item.status }}
-                          </span>
-                        </div>
-                        <span class="f-s-12 text-muted d-block">
-                          Du {{ item.dateDebut | date:'dd/MM/yyyy' }} au {{ item.dateFin | date:'dd/MM/yyyy' }}
-                        </span>
-                        <span class="f-s-12 text-dark m-t-4 d-block"><em>Motif : {{ item.motif }}</em></span>
-                      </div>
+                    <div class="p-16 bg-light rounded d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-12 w-100" style="box-sizing: border-box;">
 
-                      @if (item.status === statuts.EN_ATTENTE) {
-                        <button mat-stroked-button color="warn" (click)="annulerDemande(item.id)">
-                          Annuler
-                        </button>
-                      }
-                    </div>
+  <!-- Bloc de texte : prend la place disponible et coupe les textes longs -->
+  <div class="flex-grow-1" style="min-width: 0; word-break: break-word;">
+    <div class="d-flex align-items-center gap-8 m-b-4 flex-wrap">
+      <strong class="f-s-14 text-dark">{{ item.typeDemande }}</strong>
+      <span class="f-s-12 p-x-8 p-y-2 rounded-pill"
+            [ngClass]="{
+              'bg-light-warning text-warning': item.status === statuts.EN_ATTENTE,
+              'bg-light-success text-success': item.status === statuts.VALIDE,
+              'bg-light-error text-error': item.status === statuts.REFUSE
+            }">
+        {{ item.status }}
+      </span>
+    </div>
+    <span class="f-s-12 text-muted d-block">
+      Du {{ item.dateDebut | date:'dd/MM/yyyy' }} au {{ item.dateFin | date:'dd/MM/yyyy' }}
+    </span>
+    <span class="f-s-12 text-dark m-t-4 d-block"><em>Motif : {{ item.motif }}</em></span>
+  </div>
+
+  <!-- Bouton d'annulation : dimensions verrouillées pour éviter l'expulsion -->
+  @if (item.status === statuts.EN_ATTENTE) {
+    <button mat-stroked-button color="warn" (click)="annulerDemande(item.id)" class="flex-shrink-0 align-self-start align-self-sm-center">
+      Annuler
+    </button>
+  }
+
+</div>
                   }
                 </div>
               }
@@ -175,78 +180,82 @@
       </div>
     </mat-tab>
 
-   <!-- ========================================== -->
-<!-- ONGLET 2 : VALIDATION ÉQUIPE (Manager / Admin) -->
-<!-- ========================================== -->
-@if (isManager()) {
-  <mat-tab label="Demandes à valider">
-    <div class="row m-t-24">
-      <div class="col-12">
-        <mat-card class="cardWithShadow overflow-hidden">
-          <mat-card-header class="p-16">
-            <mat-card-title class="f-s-16 f-w-600 text-dark">
-              Demandes en attente ({{ demandesAValider().length }})
-            </mat-card-title>
-          </mat-card-header>
+    <!-- ========================================== -->
+    <!-- ONGLET 2 : VALIDATION ÉQUIPE (Manager / Admin) -->
+    <!-- ========================================== -->
+    @if (isManager()) {
+      <mat-tab label="Demandes à valider">
+        <div class="row m-t-24">
+          <div class="col-12">
+            <mat-card class="cardWithShadow">
+              <mat-card-header class="p-16">
+                <mat-card-title class="f-s-16 f-w-600 text-dark">
+                  Demandes en attente ({{ demandesAValider().length }})
+                </mat-card-title>
+              </mat-card-header>
 
-          <mat-card-content class="p-16">
-            @if (demandesAValider().length === 0) {
-              <div class="p-32 text-center m-t-16">
-                <mat-icon color="primary" class="f-s-32 m-b-8">check_circle</mat-icon>
-                <p class="f-s-14 f-w-500 text-muted m-b-4">Aucune demande en attente</p>
-                <span class="f-s-12 text-muted">Toutes les demandes de votre équipe ont été traitées.</span>
-              </div>
-            } @else {
-              <div class="d-flex flex-column gap-16 m-t-16">
-                @for (item of demandesAValider(); track item.id) {
-                  <mat-card class="p-16 bg-light rounded">
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-16">
-                      <div>
-                        <div class="d-flex align-items-center gap-8 m-b-4">
-                          <strong class="f-s-15 text-primary">
-                            {{ item.employe?.prenom }} {{ item.employe?.nom }}
-                          </strong>
-                          <span class="f-s-12 text-muted">
-                            ({{ item.employe?.organization?.nom || 'Sans entité' }})
-                          </span>
-                        </div>
-                        <span class="f-s-13 f-w-600 text-dark d-block m-b-4">
-                          Type: {{ item.typeDemande }} {{ item.type_conge ? '(' + item.type_conge + ')' : '' }}
-                        </span>
-                        <span class="f-s-12 text-muted d-block">
-                          Période: du {{ item.dateDebut | date:'dd/MM/yyyy' }} au {{ item.dateFin | date:'dd/MM/yyyy' }}
-                        </span>
-                        <p class="f-s-12 text-dark m-t-8 m-b-0">
-                          <strong>Motif:</strong> {{ item.motif }}
-                        </p>
-
-                        @if (item.justificatif) {
-                          <a [href]="item.justificatif" target="_blank" class="f-s-12 text-primary m-t-4 d-inline-block">
-                            📄 Voir le justificatif
-                          </a>
-                        }
-                      </div>
-
-                      <div class="d-flex gap-8">
-                        <button mat-stroked-button color="primary" (click)="traiterDemande(item.id, statuts.VALIDE)">
-                          Valider
-                        </button>
-                        <button mat-stroked-button color="warn" (click)="traiterDemande(item.id, statuts.REFUSE)">
-                          Refuser
-                        </button>
-                      </div>
-                    </div>
-                  </mat-card>
-                }
-              </div>
-            }
-          </mat-card-content>
-        </mat-card>
+              <!-- Scrollbar verticale pour le rôle Manager -->
+              <mat-card-content class="p-16" style="max-height: 600px; overflow-y: auto;">
+                @if (demandesAValider().length === 0) {
+                  <div class="p-32 text-center m-t-16">
+                    <mat-icon color="primary" class="f-s-32 m-b-8">check_circle</mat-icon>
+                    <p class="f-s-14 f-w-500 text-muted m-b-4">Aucune demande en attente</p>
+                    <span class="f-s-12 text-muted">Toutes les demandes de votre équipe ont été traitées.</span>
+                  </div>
+                } @else {
+                  <div class="m-t-16" style="display: flex; flex-direction: column; gap: 16px;">
+                    @for (item of demandesAValider(); track item.id) {
+                      <mat-card class="p-16 bg-light rounded w-100 m-b-0" style="box-sizing: border-box;">
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-16 flex-wrap">
+    
+    <!-- 1. Bloc de texte : forcé à respecter la largeur et à couper les mots longs -->
+    <div class="flex-grow-1" style="min-width: 0; word-break: break-word;">
+      <div class="d-flex align-items-center gap-8 m-b-4 flex-wrap">
+        <strong class="f-s-15 text-primary">
+          {{ item.employe?.prenom }} {{ item.employe?.nom }}
+        </strong>
+        <span class="f-s-12 text-muted">
+          ({{ item.employe?.organization?.nom || 'Sans entité' }})
+        </span>
       </div>
+      <span class="f-s-13 f-w-600 text-dark d-block m-b-4">
+        Type: {{ item.typeDemande }} {{ item.type_conge ? '(' + item.type_conge + ')' : '' }}
+      </span>
+      <span class="f-s-12 text-muted d-block">
+        Période: du {{ item.dateDebut | date:'dd/MM/yyyy' }} au {{ item.dateFin | date:'dd/MM/yyyy' }}
+      </span>
+      <p class="f-s-12 text-dark m-t-8 m-b-0">
+        <strong>Motif:</strong> {{ item.motif }}
+      </p>
+
+      @if (item.justificatif) {
+        <a [href]="item.justificatif" target="_blank" class="f-s-12 text-primary m-t-4 d-inline-block text-break">
+          📄 Voir le justificatif
+        </a>
+      }
     </div>
-  </mat-tab>
-}
 
+    <!-- 2. Bloc de boutons : protégé contre la déformation et l'expulsion -->
+    <div class="d-flex gap-8 flex-shrink-0 align-self-end align-self-md-center m-t-8 m-t-md-0">
+      <button mat-stroked-button color="primary" (click)="traiterDemande(item.id, statuts.VALIDE)">
+        Valider
+      </button>
+      <button mat-stroked-button color="warn" (click)="traiterDemande(item.id, statuts.REFUSE)">
+        Refuser
+      </button>
+    </div>
 
+  </div>
+</mat-card>
+                    }
+                  </div>
+                }
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+      </mat-tab>
+    }
+    
   </mat-tab-group>
 </div>

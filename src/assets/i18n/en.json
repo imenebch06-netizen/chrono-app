@@ -1,0 +1,42 @@
+{
+  "APP": {
+    "TITLE": "Chrono | Time & Activity Management Platform"
+  },
+  "COMMON": {
+    "SWITCH_TO_DARK": "Switch to dark mode",
+    "SWITCH_TO_LIGHT": "Switch to light mode",
+    "SWITCH_LANGUAGE": "Switch language",
+    "CURRENT_LANGUAGE": "English"
+  },
+  "NAV": {
+    "PERSONAL_SPACE": "Personal Space",
+    "MY_PROFILE": "My Profile",
+    "MY_PLANNING": "My Schedule",
+    "MY_CLOCKINGS": "My Clock-ins",
+    "MY_STATS": "My Statistics",
+    "MANAGEMENT_TEAM": "Management & Team",
+    "TEAM_STATS": "Team Statistics",
+    "MY_EMPLOYEES": "My Employees",
+    "ASSIGN_PLANNING": "Assign Schedule",
+    "VALIDATE_REQUESTS": "Approve Requests",
+    "TIME_MANAGEMENT": "Time Management",
+    "GLOBAL_CLOCKINGS": "Global Clock-ins",
+    "ADMINISTRATION": "Administration",
+    "GLOBAL_VIEW": "Global Overview",
+    "MANAGE_EMPLOYEES": "Manage Employees",
+    "ORGANIZATIONS": "Organizations",
+    "COMPANY_STRUCTURE": "Company Structure"
+  },
+  "HEADER": {
+    "NOTIFICATIONS": "Notifications",
+    "UNREAD_SUFFIX": "unread",
+    "NO_NOTIFICATIONS": "No notifications for now.",
+    "MY_PROFILE": "My Profile",
+    "LOGOUT": "Log Out",
+    "DELETE": "Delete",
+    "PROFILE_PHOTO_ALT": "Profile photo",
+    "PROFILE_ARIA": "User profile",
+    "DEFAULT_FIRSTNAME": "System",
+    "DEFAULT_LASTNAME": "Admin"
+  }
+}

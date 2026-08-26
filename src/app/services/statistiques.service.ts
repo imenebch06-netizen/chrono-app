@@ -11,15 +11,12 @@ import { EmployeStatusService } from './employe-status.service';
 export class StatistiquesService {
   private http = inject(HttpClient);
   private statusService = inject(EmployeStatusService);
-  private baseUrl = environment.apiUrl; // Ex: http://localhost:3000/api
+  private baseUrl = environment.apiUrl;
 
-  /**
-   * Helper pour calculer le Lundi de la semaine en cours au format YYYY-MM-DD
-   */
   private getStartOfWeekDate(): string {
     const now = new Date();
     const day = now.getDay();
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Ajustement si dimanche
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
     const monday = new Date(now.setDate(diff));
     return monday.toISOString().split('T')[0];
   }
@@ -27,6 +24,14 @@ export class StatistiquesService {
   private getTodayDate(): string {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  }
+
+  private normalizeType(value: any): string {
+    const str = String(value ?? '').toUpperCase().trim();
+    if (str.includes('CONGE')) return 'CONGE';
+    if (str.includes('RECUP') || str.includes('RTT')) return 'RECUPERATION';
+    if (str.includes('ABSENCE') || str.includes('MALADIE')) return 'ABSENCE';
+    return str;
   }
 
   private toArray(raw: any, key: string): any[] {
@@ -38,10 +43,6 @@ export class StatistiquesService {
     if (Array.isArray(raw.demandesValide)) return raw.demandesValide;
     if (raw.data) return this.toArray(raw.data, key);
     return [];
-  }
-
-  private normalizeType(value: any): string {
-    return String(value ?? '').toUpperCase();
   }
 
   private requestOrFallback<T>(request: Observable<T>, fallback: T, name: string): Observable<T> {
@@ -56,7 +57,7 @@ export class StatistiquesService {
   // =========================================================================
   // 1. STATISTIQUES PERSONNELLES (EMPLOYÉ CONNECTÉ)
   // =========================================================================
- getPersonalStats(): Observable<PersonalStats> {
+  getPersonalStats(): Observable<PersonalStats> {
     const mondayStr = this.getStartOfWeekDate();
 
     return forkJoin({
@@ -67,30 +68,21 @@ export class StatistiquesService {
         this.http.get<any[]>(`${this.baseUrl}/demandes-absence/mes-demandes`), [], 'mes-demandes'
       ),
       semaineRes: this.requestOrFallback(this.http.get<any>(`${this.baseUrl}/pointages/ma-semaine`, {
-        params: new HttpParams().set('dateDebut', mondayStr), // Utilisation de HttpParams
+        params: new HttpParams().set('dateDebut', mondayStr),
       }), {}, 'ma-semaine'),
     }).pipe(
       map(({ compteur, mesDemandes, semaineRes }) => {
         const pointages = this.toArray(semaineRes, 'pointages');
         const demandes = this.toArray(mesDemandes, 'demandes');
 
-        // -------------------------------------------------------------------
-        // CALCUL DYNAMIQUE DU TAUX DE PRÉSENCE INDIVIDUEL (EN %)
-        // -------------------------------------------------------------------
-        
-        // 1. Jours où l'employé a un pointage valide (> 0 heures ou statut PRÉSENT)
         const joursTravailles = pointages.filter(
           (p: any) => (p.dureeHeures ?? 0) > 0 || p.statut === 'PRESENT'
         ).length;
 
-        // 2. Déterminer le nombre de jours ouvrés écoulés cette semaine (Lundi à Aujourd'hui, max 5)
         const today = new Date();
-        const dayOfWeek = today.getDay(); // 0 = Dimanche, 1 = Lundi, ..., 5 = Vendredi, 6 = Samedi
-        
-        // Ex: Si on est Mercredi (day = 3), il y a eu 3 jours ouvrés (Lundi, Mardi, Mercredi)
+        const dayOfWeek = today.getDay();
         const joursOuvresEcoules = dayOfWeek === 0 ? 5 : Math.min(dayOfWeek, 5);
 
-        // 3. Calcul du taux de présence (Plafonné à 100%)
         const tauxPresence = joursOuvresEcoules > 0
           ? Math.min(100, Math.round((joursTravailles / joursOuvresEcoules) * 100))
           : 100;
@@ -99,7 +91,7 @@ export class StatistiquesService {
           soldeConges: compteur?.solde_conges ?? 0,
           soldeRtt: compteur?.solde_rtt ?? 0,
           creditDebitHeures: compteur?.credit_debit ?? 0,
-          tauxPresence, // <-- VALEUR DYNAMIQUE
+          tauxPresence,
           demandesParStatut: {
             enAttente: demandes.filter((d) => this.normalizeType(d.status || d.statut) === 'EN_ATTENTE').length,
             validees: demandes.filter((d) => ['VALIDE', 'VALIDEE', 'APPROVED', 'APPROUVEE'].includes(this.normalizeType(d.status || d.statut))).length,
@@ -146,7 +138,6 @@ export class StatistiquesService {
       }), {}, 'planning-global-equipe'),
     }).pipe(
       map(({ subordinatesRes, demandesEnAttente, demandesValidees, pointagesRes, planningsRes }) => {
-        // Adaptation aux objets retournés par le NestJS Service
         const membres = this.toArray(subordinatesRes, 'subordinates');
         const demandesEnAttenteList = this.toArray(demandesEnAttente, 'demandes');
         const demandesValideesList = this.toArray(demandesValidees, 'demandes');
@@ -162,7 +153,16 @@ export class StatistiquesService {
           today
         ));
         const presentsCount = statuts.filter((status) => status.etat === 'PRESENT').length;
-        const enCongeCount = Math.max(0, totalSubordonnes - presentsCount);
+        const enCongeCount = statuts.filter((status) => status.etat === 'EN_CONGE' || status.etat === 'ABSENT').length;
+
+        // Fusion et dédoublonnage strict par ID
+        const demandesMap = new Map<number, any>();
+        [...demandesEnAttenteList, ...demandesValideesList].forEach((d) => {
+          if (d && d.id) {
+            demandesMap.set(d.id, d);
+          }
+        });
+        const toutesDemandesEquipe = Array.from(demandesMap.values());
 
         return {
           organizationNom: subordinatesRes?.managerOrganization?.nom ?? 'Mon Équipe',
@@ -173,9 +173,9 @@ export class StatistiquesService {
           absencesParType: {
             labels: ['Congés Payés', 'Absences', 'Récupérations'],
             series: [
-              demandesValideesList.filter((d) => this.normalizeType(d.typeDemande || d.type_demande || d.type) === 'CONGE').length,
-              demandesValideesList.filter((d) => this.normalizeType(d.typeDemande || d.type_demande || d.type) === 'ABSENCE').length,
-              demandesValideesList.filter((d) => this.normalizeType(d.typeDemande || d.type_demande || d.type) === 'RECUPERATION').length,
+              toutesDemandesEquipe.filter((d) => this.normalizeType(d.typeDemande || d.type_demande || d.type) === 'CONGE').length,
+              toutesDemandesEquipe.filter((d) => this.normalizeType(d.typeDemande || d.type_demande || d.type) === 'ABSENCE').length,
+              toutesDemandesEquipe.filter((d) => this.normalizeType(d.typeDemande || d.type_demande || d.type) === 'RECUPERATION').length,
             ],
           },
           membresSummary: membres.map((m: any, index: number) => ({
@@ -185,7 +185,7 @@ export class StatistiquesService {
             soldeConges: m.compteur?.solde_conges ?? 0,
             soldeRtt: m.compteur?.solde_rtt ?? 0,
             creditDebit: m.compteur?.credit_debit ?? 0,
-            statutAujourdhui: statuts[index].etat as MembreStatSummary['statutAujourdhui'],
+            statutAujourdhui: statuts[index]?.etat as MembreStatSummary['statutAujourdhui'],
           })),
         };
       })
@@ -211,7 +211,6 @@ export class StatistiquesService {
       toutesLesDemandes: this.requestOrFallback(
         this.http.get<any>(`${this.baseUrl}/demandes-absence`), [], 'demandes-admin'
       ),
-      // 1. Récupération des pointages du jour
       pointagesAujourdhui: this.requestOrFallback(this.http.get<any>(`${this.baseUrl}/pointages/date`, {
         params: new HttpParams().set('date', today)
       }), {}, 'pointages-admin'),
@@ -238,7 +237,6 @@ export class StatistiquesService {
           ).etat === 'PRESENT'
         ).length;
 
-        // 4. Calcul du taux dynamique (arrondi à l'entier le plus proche, sécurité contre division par 0)
         const tauxPresenceGlobal = totalEmployes > 0
           ? Math.round((presentsCount / totalEmployes) * 100)
           : 0;
@@ -246,7 +244,7 @@ export class StatistiquesService {
         return {
           totalEmployes,
           totalOrganizations: organizationsList.length,
-          tauxPresenceGlobal, // <-- Valeur 100% dynamique calculée !
+          tauxPresenceGlobal,
           demandesEnAttenteTotales: demandesEnAttenteList.length,
           repartitionDemandesGlobales: {
             labels: ['Congés Payés', 'Absences', 'Récupérations'],

@@ -1,0 +1,42 @@
+{
+  "APP": {
+    "TITLE": "Chrono | Plateforme de Gestion du Temps et des Activités"
+  },
+  "COMMON": {
+    "SWITCH_TO_DARK": "Passer en mode sombre",
+    "SWITCH_TO_LIGHT": "Passer en mode clair",
+    "SWITCH_LANGUAGE": "Changer de langue",
+    "CURRENT_LANGUAGE": "Français"
+  },
+  "NAV": {
+    "PERSONAL_SPACE": "Espace Personnel",
+    "MY_PROFILE": "Mon Profil",
+    "MY_PLANNING": "Mon Planning",
+    "MY_CLOCKINGS": "Mes Pointages",
+    "MY_STATS": "Mes Statistiques",
+    "MANAGEMENT_TEAM": "Management & Équipe",
+    "TEAM_STATS": "Stats Équipe",
+    "MY_EMPLOYEES": "Mes Employés",
+    "ASSIGN_PLANNING": "Assigner Planning",
+    "VALIDATE_REQUESTS": "Validation Demandes",
+    "TIME_MANAGEMENT": "Gestion du Temps",
+    "GLOBAL_CLOCKINGS": "Pointages Globaux",
+    "ADMINISTRATION": "Administration",
+    "GLOBAL_VIEW": "Vue Globale",
+    "MANAGE_EMPLOYEES": "Gestion Employés",
+    "ORGANIZATIONS": "Organisations",
+    "COMPANY_STRUCTURE": "Structure Entreprise"
+  },
+  "HEADER": {
+    "NOTIFICATIONS": "Notifications",
+    "UNREAD_SUFFIX": "non lue(s)",
+    "NO_NOTIFICATIONS": "Aucune notification pour le moment.",
+    "MY_PROFILE": "Mon Profil",
+    "LOGOUT": "Déconnexion",
+    "DELETE": "Supprimer",
+    "PROFILE_PHOTO_ALT": "Photo de profil",
+    "PROFILE_ARIA": "Profil utilisateur",
+    "DEFAULT_FIRSTNAME": "Système",
+    "DEFAULT_LASTNAME": "Admin"
+  }
+}

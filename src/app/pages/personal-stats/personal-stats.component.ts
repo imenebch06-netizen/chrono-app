@@ -24,7 +24,6 @@ import { PersonalStats } from '../../models/statistiques.model';
   imports: [CommonModule, MatCardModule, MatIconModule, NgApexchartsModule],
   template: `
     <div class="p-6 space-y-8 bg-[var(--mat-sys-surface-bright)] min-h-screen">
-      <!-- En-tête -->
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-3xl font-extrabold text-[var(--mat-sys-on-background)] tracking-tight">Espace Personnel</h1>
@@ -33,9 +32,7 @@ import { PersonalStats } from '../../models/statistiques.model';
       </div>
 
       @if (stats(); as s) {
-        <!-- Cartes KPI -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <!-- Solde Congés -->
           <div class="bg-[var(--mat-sys-surface)] p-4 rounded-xl shadow-sm border border-[var(--mat-sys-outline)] flex items-center justify-between relative overflow-hidden group hover:shadow-md transition">
             <div class="space-y-1 z-10">
               <span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--mat-sys-on-background)]/50">Solde Congés</span>
@@ -47,7 +44,6 @@ import { PersonalStats } from '../../models/statistiques.model';
             <div class="absolute bottom-0 left-0 right-0 h-[3px] bg-[var(--mat-sys-primary)]"></div>
           </div>
 
-          <!-- Solde RTT -->
           <div class="bg-[var(--mat-sys-surface)] p-4 rounded-xl shadow-sm border border-[var(--mat-sys-outline)] flex items-center justify-between relative overflow-hidden group hover:shadow-md transition">
             <div class="space-y-1 z-10">
               <span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--mat-sys-on-background)]/50">Solde RTT</span>
@@ -59,7 +55,6 @@ import { PersonalStats } from '../../models/statistiques.model';
             <div class="absolute bottom-0 left-0 right-0 h-[3px] bg-[var(--mat-sys-primary)]"></div>
           </div>
 
-          <!-- Crédit / Débit -->
           <div class="bg-[var(--mat-sys-surface)] p-4 rounded-xl shadow-sm border border-[var(--mat-sys-outline)] flex items-center justify-between relative overflow-hidden group hover:shadow-md transition">
             <div class="space-y-1 z-10">
               <span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--mat-sys-on-background)]/50">Crédit / Débit</span>
@@ -73,7 +68,6 @@ import { PersonalStats } from '../../models/statistiques.model';
             <div class="absolute bottom-0 left-0 right-0 h-[3px]" [ngClass]="s.creditDebitHeures >= 0 ? 'bg-[var(--mat-sys-primary)]' : 'bg-[#E4585F]'"></div>
           </div>
 
-          <!-- Taux de présence -->
           <div class="bg-[var(--mat-sys-surface)] p-4 rounded-xl shadow-sm border border-[var(--mat-sys-outline)] flex items-center justify-between relative overflow-hidden group hover:shadow-md transition">
             <div class="space-y-1 z-10">
               <span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--mat-sys-on-background)]/50">Taux de Présence</span>
@@ -86,7 +80,6 @@ import { PersonalStats } from '../../models/statistiques.model';
           </div>
         </div>
 
-        <!-- Graphiques -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div class="bg-[var(--mat-sys-surface)] p-6 rounded-xl shadow-sm border border-[var(--mat-sys-outline)]">
             <h2 class="text-lg font-bold text-[var(--mat-sys-on-background)] mb-6 flex items-center gap-2">
@@ -138,7 +131,6 @@ export class PersonalStatsComponent implements OnInit {
   private statsService = inject(StatistiquesService);
   stats = signal<PersonalStats | null>(null);
 
-  // Configuration Donut Chart — dégradé monochrome basé sur la couleur primaire
   donutSeries: ApexNonAxisChartSeries = [];
   donutLabels = ['Congés', 'Absences', 'Récupérations'];
   donutColors = ['#6A62FD', '#8F88FF', '#C7C3FF'];
@@ -147,7 +139,6 @@ export class PersonalStatsComponent implements OnInit {
     pie: { donut: { size: '70%', labels: { show: true, total: { show: true, label: 'Total', color: '#526b7a' } } } }
   };
 
-  // Configuration Bar Chart — couleur primaire + neutre de la charte
   barSeries: ApexAxisChartSeries = [];
   barColors = ['#6A62FD', '#526b7a'];
   barXAxis: ApexXAxis = { categories: [], labels: { style: { colors: '#526b7a' } } };
@@ -158,7 +149,6 @@ export class PersonalStatsComponent implements OnInit {
   };
   barStroke: ApexStroke = { show: true, width: 2, colors: ['transparent'] };
 
-  // Options communes
   chartLegend: ApexLegend = { position: 'bottom', fontSize: '14px' };
   chartDataLabels: ApexDataLabels = { enabled: true };
   chartTooltip: ApexTooltip = { theme: 'light' };
@@ -174,10 +164,10 @@ export class PersonalStatsComponent implements OnInit {
       ];
 
       this.barSeries = [
-        { name: 'Heures Travaillées', data: data.evolutionHeuresMensuel.heuresTravaillees },
-        { name: 'Crédit/Débit (h)', data: data.evolutionHeuresMensuel.creditDebit },
+        { name: 'Heures Travaillées', data: [...data.evolutionHeuresMensuel.heuresTravaillees] },
+        { name: 'Crédit/Débit (h)', data: [...data.evolutionHeuresMensuel.creditDebit] },
       ];
-      this.barXAxis = { ...this.barXAxis, categories: data.evolutionHeuresMensuel.mois };
+      this.barXAxis = { ...this.barXAxis, categories: [...data.evolutionHeuresMensuel.mois] };
     });
   }
 }

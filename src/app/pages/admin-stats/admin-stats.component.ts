@@ -13,12 +13,13 @@ import {
 } from 'ng-apexcharts';
 import { StatistiquesService } from '../../services/statistiques.service';
 import { AdminGlobalStats } from '../../models/statistiques.model';
+
 @Component({
   selector: 'app-admin-stats',
   standalone: true,
   imports: [CommonModule, MatCardModule, MatIconModule, NgApexchartsModule],
-  template:` <div class="p-6 space-y-8 bg-[var(--mat-sys-surface-bright)] min-h-screen">
-      <!-- En-tête -->
+  template: `
+    <div class="p-6 space-y-8 bg-[var(--mat-sys-surface-bright)] min-h-screen">
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-3xl font-extrabold text-[var(--mat-sys-on-background)] tracking-tight">Vue d'Ensemble Entreprise</h1>
@@ -27,10 +28,7 @@ import { AdminGlobalStats } from '../../models/statistiques.model';
       </div>
 
       @if (adminStats(); as a) {
-        <!-- Grille KPI (Style harmonisé) -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          
-          <!-- Total Employés -->
           <div class="bg-[var(--mat-sys-surface)] p-4 rounded-xl shadow-sm border border-[var(--mat-sys-outline)] flex items-center justify-between relative overflow-hidden group hover:shadow-md transition">
             <div class="space-y-1 z-10">
               <span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--mat-sys-on-background)]/50">Total Employés</span>
@@ -42,7 +40,6 @@ import { AdminGlobalStats } from '../../models/statistiques.model';
             <div class="absolute bottom-0 left-0 right-0 h-[3px] bg-[var(--mat-sys-primary)]"></div>
           </div>
 
-          <!-- Organisations -->
           <div class="bg-[var(--mat-sys-surface)] p-4 rounded-xl shadow-sm border border-[var(--mat-sys-outline)] flex items-center justify-between relative overflow-hidden group hover:shadow-md transition">
             <div class="space-y-1 z-10">
               <span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--mat-sys-on-background)]/50">Organisations</span>
@@ -54,7 +51,6 @@ import { AdminGlobalStats } from '../../models/statistiques.model';
             <div class="absolute bottom-0 left-0 right-0 h-[3px] bg-[var(--mat-sys-primary)]"></div>
           </div>
 
-          <!-- Taux de Présence Global -->
           <div class="bg-[var(--mat-sys-surface)] p-4 rounded-xl shadow-sm border border-[var(--mat-sys-outline)] flex items-center justify-between relative overflow-hidden group hover:shadow-md transition">
             <div class="space-y-1 z-10">
               <span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--mat-sys-on-background)]/50">Présence Globale</span>
@@ -66,7 +62,6 @@ import { AdminGlobalStats } from '../../models/statistiques.model';
             <div class="absolute bottom-0 left-0 right-0 h-[3px] bg-[var(--mat-sys-primary)]"></div>
           </div>
 
-          <!-- Demandes en Attente -->
           <div class="bg-[var(--mat-sys-surface)] p-4 rounded-xl shadow-sm border border-[var(--mat-sys-outline)] flex items-center justify-between relative overflow-hidden group hover:shadow-md transition">
             <div class="space-y-1 z-10">
               <span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--mat-sys-on-background)]/50">Demandes en Attente</span>
@@ -77,10 +72,8 @@ import { AdminGlobalStats } from '../../models/statistiques.model';
             </div>
             <div class="absolute bottom-0 left-0 right-0 h-[3px] bg-[var(--mat-sys-primary)]"></div>
           </div>
-
         </div>
 
-        <!-- Graphique Global -->
         <div class="bg-[var(--mat-sys-surface)] p-6 rounded-xl shadow-sm border border-[var(--mat-sys-outline)] max-w-3xl mx-auto">
           <h2 class="text-lg font-bold text-[var(--mat-sys-on-background)] mb-6 flex items-center gap-2">
             <mat-icon class="text-[var(--mat-sys-primary)]">donut_large</mat-icon>
@@ -105,13 +98,12 @@ import { AdminGlobalStats } from '../../models/statistiques.model';
         </div>
       }
     </div>
-    `,
+  `,
 })
 export class AdminStatsComponent implements OnInit {
   private statsService = inject(StatistiquesService);
   adminStats = signal<AdminGlobalStats | null>(null);
 
-  // Dégradé monochrome basé sur la couleur primaire de la charte
   chartColors = ['#6A62FD', '#8F88FF', '#C7C3FF'];
 
   donutSeries: ApexNonAxisChartSeries = [];
@@ -134,7 +126,7 @@ export class AdminStatsComponent implements OnInit {
   ngOnInit(): void {
     this.statsService.getAdminStats().subscribe((data) => {
       this.adminStats.set(data);
-      this.donutSeries = data.repartitionDemandesGlobales.series;
+      this.donutSeries = [...data.repartitionDemandesGlobales.series];
     });
   }
 }
