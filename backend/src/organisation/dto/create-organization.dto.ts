@@ -10,6 +10,14 @@ export class CreateOrganizationDto {
   @IsNotEmpty({ message: 'Le nom de l’organisation est obligatoire.' })
   nom!: string;
 
+  @ApiPropertyOptional({
+    description: "Nom de l'organisation en anglais",
+    example: 'Human Resources Department',
+  })
+  @IsString()
+  @IsOptional()
+  nom_en?: string;
+  
   @ApiProperty({
     description: "ID de la catégorie/type d'organisation (ex: 1 pour Direction, 2 pour Service)",
     example: 1,

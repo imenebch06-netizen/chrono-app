@@ -12,10 +12,7 @@ import { Role } from '../auth/enums/role.enum';
 export class PlanningService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // =========================================================================
-  // 1. CRÉATION DE PLANNING (Simple ou Multi-Employés)
-  // =========================================================================
-  async create(dto: CreatePlanningDto, user: any) {
+   async create(dto: CreatePlanningDto, user: any) {
   const currentUserId = Number(user?.id ?? user?.sub);
   const items = dto.planning;
 
@@ -23,12 +20,10 @@ export class PlanningService {
     throw new BadRequestException('Le tableau "planning" ne peut pas être vide.');
   }
 
-  // 1. Extraction de tous les IDs d'employés uniques ciblés dans le tableau
   const uniqueEmployeIds = Array.from(
     new Set(items.map((item) => Number(item.employeId))),
   );
 
-  // 2. Vérification des droits hiérarchiques si l'utilisateur n'est PAS ADMIN
   if (user?.role !== Role.ADMIN) {
     const managedOrg = await this.prisma.organization.findFirst({
       where: { managerId: currentUserId },
@@ -38,7 +33,6 @@ export class PlanningService {
       throw new ForbiddenException("Vous n'êtes responsable d'aucune organisation.");
     }
 
-    // Récupérer tous les employés concernés avec leur organisation
     const employes = await this.prisma.employe.findMany({
       where: { id: { in: uniqueEmployeIds } },
       include: { organization: true },
@@ -48,7 +42,6 @@ export class PlanningService {
       throw new NotFoundException('Un ou plusieurs employés cibles sont introuvables.');
     }
 
-    // S'assurer que CHACUN des employés appartient à la branche du manager
     const managerPath = managedOrg.path;
     for (const emp of employes) {
       const empPath = emp.organization?.path;
@@ -62,7 +55,6 @@ export class PlanningService {
     }
   }
 
-  // 3. Préparation des données pour l'insertion
   const planningData = items.map((item) => ({
     employeId: Number(item.employeId),
     dateDebut: new Date(item.dateDebut),
@@ -79,9 +71,6 @@ export class PlanningService {
         : item.joursRepos ?? null,
   }));
 
-  // 🟢 4. TRANSACTION PRISMA (Nettoyage + Insertion)
-  // On supprime d'abord les anciens plannings des employés concernés
-  // puis on insère les nouveaux de manière atomique.
   await this.prisma.$transaction([
     this.prisma.planning.deleteMany({
       where: {
@@ -98,11 +87,7 @@ export class PlanningService {
     count: planningData.length,
   };
 }
-  // =========================================================================
-  // 2. LECTURE & CONSULTATION
-  // =========================================================================
-
-  // A. Planning personnel
+  
   async findMyPlanning(employeId: number, startDate?: string, endDate?: string) {
     const dateWhere: any = {};
     if (startDate) dateWhere.dateFin = { gte: new Date(startDate) };
@@ -117,7 +102,6 @@ export class PlanningService {
     });
   }
 
-  // B. Planning de l'équipe du Manager (Arbre hiérarchique)
   async findTeamPlanning(managerId: number, startDate?: string, endDate?: string) {
     const managedOrg = await this.prisma.organization.findFirst({
       where: { managerId },
@@ -155,8 +139,7 @@ export class PlanningService {
     });
   }
 
-  // C. Planning global (Vue Admin)
-  async findAllPlanning(startDate?: string, endDate?: string, organizationId?: number) {
+    async findAllPlanning(startDate?: string, endDate?: string, organizationId?: number) {
     const dateWhere: any = {};
     if (startDate) dateWhere.dateFin = { gte: new Date(startDate) };
     if (endDate) dateWhere.dateDebut = { lte: new Date(endDate) };
@@ -195,9 +178,6 @@ export class PlanningService {
     });
   }
 
-  // =========================================================================
-  // 3. SUPPRESSION DU PLANNING
-  // =========================================================================
   async remove(id: number, user: any) {
     const currentUserId = Number(user?.id ?? user?.sub);
 
@@ -212,7 +192,6 @@ export class PlanningService {
       throw new NotFoundException(`Planning #${id} introuvable.`);
     }
 
-    // Vérification des droits pour la suppression si non Admin
     if (user?.role !== Role.ADMIN) {
       const managedOrg = await this.prisma.organization.findFirst({
         where: { managerId: currentUserId },

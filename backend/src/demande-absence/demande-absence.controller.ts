@@ -29,7 +29,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorator/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
-import { CurrentUser } from '../auth/decorator/current-user.decorator'; // Ajuste le chemin au besoin
+import { CurrentUser } from '../auth/decorator/current-user.decorator'; 
 @ApiTags('Demandes d\'Absence')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -37,10 +37,7 @@ import { CurrentUser } from '../auth/decorator/current-user.decorator'; // Ajust
 export class DemandeAbsenceController {
   constructor(private readonly demandeAbsenceService: DemandeAbsenceService) {}
 
-  // =========================================================================
-  // 1. CRÉATION & ESPACE PERSONNEL
-  // =========================================================================
-
+  
   @Post()
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
@@ -100,10 +97,7 @@ export class DemandeAbsenceController {
     return this.demandeAbsenceService.cancelOwnDemande(id, userId);
   }
 
-  // =========================================================================
-  // 2. WORKFLOW VALIDATION MANAGER & ADMIN
-  // =========================================================================
-
+  
   @Get('en-attente/mon-equipe')
   @Roles('MANAGER')
   @ApiOperation({
@@ -146,10 +140,7 @@ export class DemandeAbsenceController {
     return this.demandeAbsenceService.updateStatus(id, dto, user);
   }
 
-  // =========================================================================
-  // 3. CONSULTATION DÉTAILLÉE & ADMINISTRATION GLOBALE
-  // =========================================================================
-
+ 
   @Get()
   @Roles(Role.ADMIN)
   @ApiOperation({

@@ -9,7 +9,6 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 export class NotificationController {
   constructor(private readonly prisma: PrismaService) {}
 
-  // 1. Récupérer les notifications de l'utilisateur connecté
   @Get('my')
   @ApiOperation({ summary: 'Récupérer mes notifications' })
   @ApiResponse({ status: 200, description: 'Liste des notifications de l’utilisateur connecté.' })
@@ -21,11 +20,10 @@ export class NotificationController {
     return this.prisma.notification.findMany({
       where: { employeId: userId },
       orderBy: { createdAt: 'desc' },
-      take: 20, // Limite aux 20 plus récentes
+      take: 20,
     });
   }
 
-  // 2. Marquer comme lue
   @Patch(':id/read')
   @ApiOperation({ summary: 'Marquer une notification comme lue' })
   @ApiParam({ name: 'id', type: Number, description: 'ID de la notification' })
@@ -38,7 +36,6 @@ export class NotificationController {
     });
   }
 
-  // 3. Supprimer une notification
   @Delete(':id')
   @ApiOperation({ summary: 'Supprimer une notification' })
   @ApiParam({ name: 'id', type: Number, description: 'ID de la notification' })

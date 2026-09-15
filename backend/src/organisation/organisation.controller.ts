@@ -27,7 +27,7 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { Roles } from 'src/auth/decorator/roles.decorator';
 import { Role } from 'src/auth/enums/role.enum';
 
-@ApiTags('Organizations') // Regroupe ces endpoints sous l'onglet "Organizations" dans Swagger UI
+@ApiTags('Organizations') 
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Roles(Role.ADMIN)
@@ -35,9 +35,7 @@ import { Role } from 'src/auth/enums/role.enum';
 export class OrganizationController {
   constructor(private readonly organizationService: OrganizationService) {}
 
-  // =========================================================================
-  // 1. CRÉATION D'UNE ORGANISATION
-  // =========================================================================
+  
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
@@ -61,9 +59,7 @@ export class OrganizationController {
     return this.organizationService.create(createDto);
   }
 
-  // =========================================================================
-  // 2. LISTER TOUTES LES ORGANISATIONS
-  // =========================================================================
+ 
   @Get()
   @ApiOperation({
     summary: 'Lister toutes les organisations',
@@ -107,9 +103,7 @@ export class OrganizationController {
   }
 
   
-  // =========================================================================
-  // 3. DÉTAILS D'UNE ORGANISATION
-  // =========================================================================
+ 
   @Get(':id')
   @ApiOperation({
     summary: 'Obtenir les détails d’une organisation par son ID',
@@ -134,9 +128,7 @@ export class OrganizationController {
     return this.organizationService.findOne(id);
   }
 
-  // =========================================================================
-  // 4. OBTENIR TOUTE LA DESCENDANCE (SOUS-ORGANISATIONS)
-  // =========================================================================
+  
   @Get(':id/sub-organizations')
   @ApiOperation({
     summary: 'Obtenir toute la sous-arborescence d’une organisation',
@@ -161,9 +153,6 @@ export class OrganizationController {
     return this.organizationService.getSubOrganizations(id);
   }
 
-  // =========================================================================
-  // 5. AFFECTATION / RETRAIT DU MANAGER
-  // =========================================================================
   @Patch(':id/manager')
   @ApiOperation({
     summary: 'Affecter ou retirer le manager d’une organisation',
@@ -197,9 +186,7 @@ export class OrganizationController {
     return this.organizationService.assignManager(id, dto);
   }
 
-  // =========================================================================
-  // 6. MODIFICATION STRUCTURELLE OU DÉPLACEMENT
-  // =========================================================================
+ 
   @Patch(':id')
   @ApiOperation({
     summary: 'Modifier les informations ou déplacer une organisation',
@@ -231,9 +218,7 @@ export class OrganizationController {
     return this.organizationService.update(id, dto);
   }
 
-  // =========================================================================
-  // 7. SUPPRESSION D'UNE ORGANISATION
-  // =========================================================================
+
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
@@ -264,7 +249,7 @@ export class OrganizationController {
   }
 
 
-   // ======================================================================
+  
  
 
 }

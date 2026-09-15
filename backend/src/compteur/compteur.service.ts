@@ -9,9 +9,6 @@ export class CompteurService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  // ---------------------------------------------------------------------
-  // 1. LECTURE ET CRÉATION AUTOMATIQUE
-  // ---------------------------------------------------------------------
 
   async getByEmploye(employeId: number) {
     const employe = await this.prisma.employe.findUnique({ where: { id: employeId } });
@@ -24,7 +21,7 @@ export class CompteurService {
       update: {},
       create: {
         employeId,
-        solde_conges: 0.0, // Initialisation à 0.0 (Option A)
+        solde_conges: 0.0,
         solde_rtt: 0.0,
         credit_debit: 0.0,
       },
@@ -40,32 +37,23 @@ export class CompteurService {
     });
   }
 
-  // ---------------------------------------------------------------------
-  // 🆕 MÉTHODES DE SYNCHRONISATION EN TEMPS RÉEL
-  // ---------------------------------------------------------------------
 
-  /**
-   * Ajuste le crédit/débit et synchronise immédiatement le solde RTT
-   */
-  async ajusterCreditDebit(employeId: number, diffCredit: number) {
-    const compteur = await this.getByEmploye(employeId);
-    
-    const nouveauCredit = Number((compteur.credit_debit + diffCredit).toFixed(2));
-    // RTT est le miroir positif du crédit/débit (redevient 0 s'il est négatif)
-    const nouveauRtt = Math.max(0, nouveauCredit);
+async ajusterCreditDebit(employeId: number, diffCredit: number) {
+  const compteur = await this.getByEmploye(employeId);
 
-    return this.prisma.compteur.update({
-      where: { employeId },
-      data: {
-        credit_debit: nouveauCredit,
-        solde_rtt: nouveauRtt,
-      },
-    });
-  }
+  const nouveauCredit = Number((compteur.credit_debit + diffCredit).toFixed(2));
+  const nouveauRtt = Number(Math.max(0, compteur.solde_rtt + diffCredit).toFixed(2));
 
-  /**
-   * Déduit les jours de Congés Payés
-   */
+  return this.prisma.compteur.update({
+    where: { employeId },
+    data: {
+      credit_debit: nouveauCredit,
+      solde_rtt: nouveauRtt,
+    },
+  });
+}
+
+
   async deduireConges(employeId: number, nbJours: number) {
     const compteur = await this.getByEmploye(employeId);
 
@@ -83,46 +71,38 @@ export class CompteurService {
     });
   }
 
-  /**
-   * Déduit les heures de récupération/RTT du crédit global
-   */
-  async deduireRtt(employeId: number, nbHeures: number) {
-    const compteur = await this.getByEmploye(employeId);
+ async deduireRtt(employeId: number, nbHeures: number) {
+  const compteur = await this.getByEmploye(employeId);
 
-    if (compteur.solde_rtt < nbHeures) {
-      throw new BadRequestException(
-        `Solde RTT insuffisant (${compteur.solde_rtt} h disponible(s), ${nbHeures} h requise(s)).`,
-      );
-    }
-
-    const nouveauCredit = Number((compteur.credit_debit - nbHeures).toFixed(2));
-    const nouveauRtt = Math.max(0, nouveauCredit);
-
-    return this.prisma.compteur.update({
-      where: { employeId },
-      data: {
-        credit_debit: nouveauCredit,
-        solde_rtt: nouveauRtt,
-      },
-    });
+  if (compteur.solde_rtt < nbHeures) {
+    throw new BadRequestException(
+      `Solde RTT insuffisant (${compteur.solde_rtt} h disponible(s), ${nbHeures} h requise(s)).`,
+    );
   }
 
-  // ---------------------------------------------------------------------
-  // 2. LOGIQUE DE CLÔTURE DE PÉRIODE & REMISE À ZÉRO
-  // ---------------------------------------------------------------------
+  const nouveauRtt = Number((compteur.solde_rtt - nbHeures).toFixed(2));
+  const nouveauCredit = Number((compteur.credit_debit - nbHeures).toFixed(2));
 
-  async reinitialiserCreditDebitMensuel() {
-    this.logger.log('🔄 Remise à zéro mensuelle du crédit/débit...');
+  return this.prisma.compteur.update({
+    where: { employeId },
+    data: {
+      credit_debit: nouveauCredit,
+      solde_rtt: nouveauRtt,
+    },
+  });
+}
 
-    await this.prisma.compteur.updateMany({
-      data: {
-        credit_debit: 0.0,
-      },
-    });
-
-    this.logger.log('✅ Remise à zéro du crédit/débit effectuée.');
-    return { message: 'Clôture mensuelle du crédit/débit réussie.' };
-  }
+async reinitialiserCreditDebitMensuel() {
+  this.logger.log('🔄 Remise à zéro mensuelle du crédit/débit et du solde RTT...');
+  await this.prisma.compteur.updateMany({
+    data: {
+      credit_debit: 0.0,
+      solde_rtt: 0.0,
+    },
+  });
+  this.logger.log(' Remise à zéro effectuée.');
+  return { message: 'Clôture mensuelle du crédit/débit et du RTT réussie.' };
+}
 
   async attributionMensuelleConges() {
     this.logger.log('🎁 Attribution mensuelle des congés payés (+2.08j)...');
@@ -148,9 +128,6 @@ export class CompteurService {
     return { message: 'Remise à zéro annuelle des soldes RTT effectuée.' };
   }
 
-  // ---------------------------------------------------------------------
-  // 3. TÂCHES AUTOMATIQUES PLANIFIÉES (CRON JOBS)
-  // ---------------------------------------------------------------------
 
   @Cron(CronExpression.EVERY_1ST_DAY_OF_MONTH_AT_MIDNIGHT)
   async handleCronAttributionConges() {
@@ -173,3 +150,5 @@ export class CompteurService {
     await this.reinitialiserRttAnnuel();
   }
 }
+
+

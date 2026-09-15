@@ -11,14 +11,14 @@ import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiBearerAuth } from '@nes
 import { UploadService } from './upload.service';
 import { Multer } from 'multer';
 
-@ApiTags('Upload Images') //  Titre propre dans Swagger
+@ApiTags('Upload Images') 
 @Controller('upload')
 export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
 
   @Post('image')
   @ApiOperation({ summary: 'Téléverser une image vers Cloudinary' })
-  @ApiConsumes('multipart/form-data') // Indique à Swagger qu'il s'agit d'un envoi de fichier
+  @ApiConsumes('multipart/form-data') 
   @ApiBody({
     schema: {
       type: 'object',
@@ -30,9 +30,9 @@ export class UploadController {
       },
     },
   })
-  @UseInterceptors(FileInterceptor('file')) //Interceptor pour gérer le fichier téléversé
+  @UseInterceptors(FileInterceptor('file')) 
   async uploadImage(@UploadedFile() file: Express.Multer.File) {
-    //Utiliser la méthode `uploadImage` de `UploadService` pour téléverser le fichier vers Cloudinary
+   
     if (!file) {
       throw new BadRequestException('Aucun fichier fourni');
     }

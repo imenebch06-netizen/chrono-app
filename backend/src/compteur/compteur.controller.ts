@@ -14,7 +14,6 @@ import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth } from '@ne
 import { CompteurService } from './compteur.service';
 import { UpdateCompteurDto } from './dto/update-compteur.dto';
 
-// 🛡️ Vos Guards, Décorateurs et Enums exacts
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorator/roles.decorator';
@@ -22,14 +21,11 @@ import { Role } from '../auth/enums/role.enum';
 
 @ApiTags('Compteurs & Soldes')
 @UseGuards(JwtAuthGuard)
-@ApiBearerAuth() // Activer le Bearer Token dans Swagger
+@ApiBearerAuth()
 @Controller('compteurs')
 export class CompteurController {
   constructor(private readonly compteurService: CompteurService) {}
 
-  // =========================================================================
-  // 1. OBTENIR MON PROPRE COMPTEUR (UTILISATEUR CONNECTÉ VIA JWT)
-  // =========================================================================
   @Get('mon-compteur')
 
   @Roles('MANAGER')
@@ -41,10 +37,7 @@ export class CompteurController {
     return this.compteurService.getByEmploye(userId);
   }
 
-  // =========================================================================
-  // 2. OBTENIR LE COMPTEUR D'UN EMPLOYÉ SPÉCIFIQUE
-  // =========================================================================
-  @Get('employe/:employeId') // 🔒 Profil propre, Manager du même service ou Admin
+  @Get('employe/:employeId')
   @ApiOperation({ summary: "Obtenir les soldes du compteur d'un employé spécifique" })
   @ApiParam({ name: 'employeId', example: 1, description: "ID de l'employé" })
   @ApiResponse({ status: 200, description: 'Soldes du compteur récupérés avec succès.' })
@@ -54,12 +47,9 @@ export class CompteurController {
     return this.compteurService.getByEmploye(employeId);
   }
 
-  // =========================================================================
-  // 3. AJUSTER MANUELLEMENT UN COMPTEUR (ADMIN / RH)
-  // =========================================================================
   @Patch('employe/:employeId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN) // 🔑 Seul l'Admin peut ajuster manuellement les soldes
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: "Ajuster manuellement les soldes d'un employé (RH / Admin)" })
   @ApiParam({ name: 'employeId', example: 1, description: "ID de l'employé" })
   @ApiResponse({ status: 200, description: 'Compteur mis à jour avec succès.' })
@@ -72,9 +62,6 @@ export class CompteurController {
     return this.compteurService.updateCompteur(employeId, dto);
   }
 
-  // =========================================================================
-  // 4. ACTIONS MANUELLES FORCÉES (ADMIN ONLY)
-  // =========================================================================
 
   @Post('cloture-mensuelle')
   @UseGuards(JwtAuthGuard, RolesGuard)

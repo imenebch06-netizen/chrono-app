@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 async function assignManagers() {
   console.log('🔄 Attribution des managers aux organisations existantes...');
 
-  // 1. Récupérer toutes les organisations
+  
   const organizations = await prisma.organization.findMany();
 
   if (organizations.length === 0) {
@@ -16,20 +16,20 @@ async function assignManagers() {
   let count = 0;
 
   for (const org of organizations) {
-    // 2. Trouver un employé appartenant à cette organisation
-    // On priorise celui qui a "manager" dans son email, sinon le tout premier trouvé
+  
+  
     const managerCandidate = await prisma.employe.findFirst({
       where: {
         organizationId: org.id,
       },
       orderBy: [
-        { email: 'asc' }, // Priorise manager.X@entreprise.com
+        { email: 'asc' }, 
         { id: 'asc' },
       ],
     });
 
     if (managerCandidate) {
-      // 3. Mettre à jour uniquement le champ managerId de l'organisation
+      
       await prisma.organization.update({
         where: { id: org.id },
         data: {
