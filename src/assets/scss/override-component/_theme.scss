@@ -3,14 +3,20 @@
 @use "../variables" as *;
 
 html {
-  @include mat.theme((color: mat.$azure-palette,
-      typography: "Manrope",
-    ));
+  @include mat.theme((
+    color: (
+      theme-type: color-scheme,
+      primary: mat.$azure-palette
+    ),
+    typography: "Manrope",
+  ));
 
-  @include mat.theme-overrides((error: rgb(255, 102, 146),
-      body-medium-size: 14px,
-      body-large-size: 14px,
-      outline-variant: #e0e6eb,
-      level1: 0px 2px 4px -1px rgba(175, 182, 201, 0.2),
-      level2: 0 15px 30px rgba(0, 0, 0, 0.12)));
+  @include mat.theme-overrides((
+    error: rgb(255, 102, 146),
+    body-medium-size: 14px,
+    body-large-size: 14px,
+    // outline-variant supprimé pour permettre à la variable CSS dynamic var(--mat-sys-outline-variant) de s'appliquer
+    level1: 0px 2px 4px -1px rgba(175, 182, 201, 0.2),
+    level2: 0 15px 30px rgba(0, 0, 0, 0.12)
+  ));
 }

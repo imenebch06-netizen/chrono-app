@@ -4,9 +4,13 @@
 @use "themecolors/blue_theme";
 
 @use "variables" as *;
-@use "override-component";
+
 @use "theme-variables/default-variables";
 @use "theme-variables/light-theme-variables";
+@use "theme-variables/dark-theme-variables";
+
+
+@use "override-component";
 
 //container layout
 @use "layouts/transitions";

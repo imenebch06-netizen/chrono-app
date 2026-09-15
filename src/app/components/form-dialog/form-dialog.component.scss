@@ -1,0 +1,66 @@
+
+::ng-deep .lang-dropdown-btn {
+  min-width: unset !important;
+  padding: 0 4px !important;
+  height: 32px !important;
+  color: var(--mat-sys-on-background, #29343d) !important;
+
+  &:hover {
+    background-color: var(--mat-menu-item-hover-state-layer-color, #f6f9fc) !important;
+  }
+
+  .mdc-button__label {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+
+  .lang-text {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--mat-sys-on-background, #29343d);
+  }
+
+  .arrow-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    margin: 0 !important;
+    color: var(--mat-sys-on-background, #8c98a4);
+  }
+}
+
+::ng-deep .language-menu {
+  background-color: var(--mat-sys-surface, #fff) !important;
+
+  .mat-mdc-menu-item {
+    color: var(--mat-sys-on-background, #29343d) !important;
+
+    &:hover,
+    &:focus {
+      background-color: var(--mat-menu-item-hover-state-layer-color, #f6f9fc) !important;
+    }
+
+    span {
+      color: inherit;
+    }
+  }
+}
+
+/* Dimensions des drapeaux SVG */
+.flag-icon {
+  width: 20px;
+  height: 14px;
+  border-radius: 2px;
+  box-shadow: 0 0 1px rgba(0, 0, 0, 0.3);
+  object-fit: cover;
+}
+
+/* Conteneur de la Carte Leaflet */
+.map-container {
+  height: 280px;
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid #e5eaef;
+  z-index: 1;
+}

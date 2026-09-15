@@ -17,8 +17,7 @@ export interface NotificationItem {
 })
 export class NotificationService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:3000/api/notifications'; // Ajuste selon ton API URL
-
+  private apiUrl = 'http://localhost:3000/api/notifications'; 
   getMyNotifications(): Observable<NotificationItem[]> {
     return this.http.get<NotificationItem[]>(`${this.apiUrl}/my`);
   }

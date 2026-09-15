@@ -1,5 +1,5 @@
-<h2 mat-dialog-title class="f-s-20 f-w-600 m-b-16">
-  {{ formData.id ? 'Modifier l\'employé' : 'Ajouter un nouvel employé' }}
+<h2 mat-dialog-title class="f-s-20 f-w-600 m-b-16 text-dark">
+  {{ (formData.id ? 'EMPLOYEE_FORM.EDIT_TITLE' : 'EMPLOYEE_FORM.ADD_TITLE') | translate }}
 </h2>
 
 <mat-dialog-content class="p-t-0">
@@ -8,64 +8,152 @@
 
       <!-- Nom -->
       <div class="col-lg-6 m-b-16">
-        <mat-label class="f-w-600 m-b-8 d-block">Nom</mat-label>
+        <mat-label class="f-w-600 m-b-8 d-block">{{ 'EMPLOYEE_FORM.LASTNAME_LABEL' | translate }}</mat-label>
         <mat-form-field appearance="outline" class="w-100" color="primary">
-          <input matInput [(ngModel)]="formData.nom" name="nom" required placeholder="Ex: BENALI" />
+          <input matInput [(ngModel)]="formData.nom" name="nom" required [placeholder]="'EMPLOYEE_FORM.LASTNAME_PLACEHOLDER' | translate" />
         </mat-form-field>
       </div>
 
       <!-- Prénom -->
       <div class="col-lg-6 m-b-16">
-        <mat-label class="f-w-600 m-b-8 d-block">Prénom</mat-label>
+        <mat-label class="f-w-600 m-b-8 d-block">{{ 'EMPLOYEE_FORM.FIRSTNAME_LABEL' | translate }}</mat-label>
         <mat-form-field appearance="outline" class="w-100" color="primary">
-          <input matInput [(ngModel)]="formData.prenom" name="prenom" required placeholder="Ex: Karim" />
+          <input matInput [(ngModel)]="formData.prenom" name="prenom" required [placeholder]="'EMPLOYEE_FORM.FIRSTNAME_PLACEHOLDER' | translate" />
         </mat-form-field>
       </div>
 
       <!-- Email -->
       <div class="col-lg-6 m-b-16">
-        <mat-label class="f-w-600 m-b-8 d-block">Email</mat-label>
+        <mat-label class="f-w-600 m-b-8 d-block">{{ 'EMPLOYEE_FORM.EMAIL_LABEL' | translate }}</mat-label>
         <mat-form-field appearance="outline" class="w-100" color="primary">
-          <input matInput type="email" [(ngModel)]="formData.email" name="email" required placeholder="Ex: karim.benali@company.com" />
+          <input matInput type="email" [(ngModel)]="formData.email" name="email" required [placeholder]="'EMPLOYEE_FORM.EMAIL_PLACEHOLDER' | translate" />
         </mat-form-field>
       </div>
 
       <!-- Mot de passe -->
       <div class="col-lg-6 m-b-16">
         <mat-label class="f-w-600 m-b-8 d-block">
-          Mot de passe {{ formData.id ? '(inchangé si vide)' : '' }}
+          {{ 'EMPLOYEE_FORM.PASSWORD_LABEL' | translate }} {{ formData.id ? ('EMPLOYEE_FORM.PASSWORD_UNCHANGED' | translate) : '' }}
         </mat-label>
         <mat-form-field appearance="outline" class="w-100" color="primary">
           <input matInput type="password" [(ngModel)]="formData.password" name="password" autocomplete="current-password" [required]="!formData.id" placeholder="••••••••" />
         </mat-form-field>
       </div>
 
-      <!-- Adresse -->
-      <div class="col-lg-6 m-b-16">
-        <mat-label class="f-w-600 m-b-8 d-block">Adresse</mat-label>
+      <!-- Adresse multilingue avec Dropdown (Drapeaux SVG) -->
+      <div class="col-lg-12 m-b-16">
+        <mat-label class="f-w-600 m-b-8 d-block">{{ 'EMPLOYEE_FORM.ADDRESS_LABEL' | translate }}</mat-label>
+
         <mat-form-field appearance="outline" class="w-100" color="primary">
-          <input matInput [(ngModel)]="formData.adress" name="adress" placeholder="Ex: Rue 14, Alger" />
+          <input 
+            matInput 
+            [(ngModel)]="currentAddress" 
+            name="currentAddress" 
+            (change)="searchAddressOnMap()"
+            [placeholder]="selectedAddressLang === 'fr' ? ('EMPLOYEE_FORM.ADDRESS_PLACEHOLDER' | translate) : ('EMPLOYEE_FORM.ADDRESS_EN_PLACEHOLDER' | translate)" 
+          />
+
+          <!-- BOUTON RECHERCHE + DROPDOWN DANS LE CHAMP -->
+          <div matSuffix class="d-flex align-items-center p-r-4 gap-4">
+            <button type="button" mat-icon-button (click)="searchAddressOnMap()" title="Rechercher sur la carte">
+              <mat-icon color="primary">search</mat-icon>
+            </button>
+
+            <button 
+              type="button" 
+              mat-button 
+              [matMenuTriggerFor]="langMenu" 
+              class="lang-dropdown-btn"
+            >
+              <!-- Drapeau France SVG -->
+              <svg *ngIf="selectedAddressLang === 'fr'" class="flag-icon" viewBox="0 0 640 480">
+                <path fill="#fff" d="M0 0h640v480H0z"/>
+                <path fill="#00267f" d="M0 0h213.3v480H0z"/>
+                <path fill="#f31830" d="M426.7 0H640v480H426.7z"/>
+              </svg>
+
+              <!-- Drapeau UK SVG -->
+              <svg *ngIf="selectedAddressLang === 'en'" class="flag-icon" viewBox="0 0 640 480">
+                <path fill="#012169" d="M0 0h640v480H0z"/>
+                <path fill="#FFF" d="m75 0 244 181L562 0h78v62L400 240l240 178v62h-78L319 299 75 480H0v-62l240-178L0 62V0h75z"/>
+                <path fill="#C8102E" d="m424 286 216 161v33h-44L376 320l48-34zM640 0v15L459 150l-48-35L596 0h44zM0 480v-15l181-135 48 35L44 480H0zM0 0v33l216 161-48 34L0 44V0z"/>
+                <path fill="#FFF" d="M240 0h160v480H240zM0 160h640v160H0z"/>
+                <path fill="#C8102E" d="M267 0h106v480H267zM0 187h640v106H0z"/>
+              </svg>
+
+              <span class="lang-text">{{ selectedAddressLang.toUpperCase() }}</span>
+              <mat-icon class="arrow-icon">arrow_drop_down</mat-icon>
+            </button>
+
+            <!-- MENU DÉROULANT DES LANGUES -->
+            <mat-menu #langMenu="matMenu" class="language-menu" xPosition="before">
+              <button mat-menu-item type="button" (click)="selectedAddressLang = 'fr'">
+                <div class="d-flex align-items-center gap-8">
+                  <svg class="flag-icon" viewBox="0 0 640 480">
+                    <path fill="#fff" d="M0 0h640v480H0z"/>
+                    <path fill="#00267f" d="M0 0h213.3v480H0z"/>
+                    <path fill="#f31830" d="M426.7 0H640v480H426.7z"/>
+                  </svg>
+                  <span>Français</span>
+                </div>
+              </button>
+
+              <button mat-menu-item type="button" (click)="selectedAddressLang = 'en'">
+                <div class="d-flex align-items-center gap-8">
+                  <svg class="flag-icon" viewBox="0 0 640 480">
+                    <path fill="#012169" d="M0 0h640v480H0z"/>
+                    <path fill="#FFF" d="m75 0 244 181L562 0h78v62L400 240l240 178v62h-78L319 299 75 480H0v-62l240-178L0 62V0h75z"/>
+                    <path fill="#C8102E" d="m424 286 216 161v33h-44L376 320l48-34zM640 0v15L459 150l-48-35L596 0h44zM0 480v-15l181-135 48 35L44 480H0zM0 0v33l216 161-48 34L0 44V0z"/>
+                    <path fill="#FFF" d="M240 0h160v480H240zM0 160h640v160H0z"/>
+                    <path fill="#C8102E" d="M267 0h106v480H267zM0 187h640v106H0z"/>
+                  </svg>
+                  <span>English</span>
+                </div>
+              </button>
+            </mat-menu>
+          </div>
         </mat-form-field>
+      </div>
+
+      <!-- Coordonnées GPS (Lecture seule) -->
+      <div class="col-lg-6 m-b-16">
+        <mat-label class="f-w-600 m-b-8 d-block">Latitude</mat-label>
+        <mat-form-field appearance="outline" class="w-100" color="primary">
+          <input matInput [value]="formData.latitude" name="latitude" readonly placeholder="Ex: 36.7510" />
+        </mat-form-field>
+      </div>
+
+      <div class="col-lg-6 m-b-16">
+        <mat-label class="f-w-600 m-b-8 d-block">Longitude</mat-label>
+        <mat-form-field appearance="outline" class="w-100" color="primary">
+          <input matInput [value]="formData.longitude" name="longitude" readonly placeholder="Ex: 5.0567" />
+        </mat-form-field>
+      </div>
+
+      <!-- Carte OpenStreetMap -->
+      <div class="col-lg-12 m-b-16">
+        <mat-label class="f-w-600 m-b-8 d-block">{{ 'EMPLOYEE_FORM.LOCALISATION_LABEL' | translate }}</mat-label>
+        <div id="map" class="map-container"></div>
       </div>
 
       <!-- Rôle -->
       <div class="col-lg-6 m-b-16">
-        <mat-label class="f-w-600 m-b-8 d-block">Rôle</mat-label>
+        <mat-label class="f-w-600 m-b-8 d-block">{{ 'EMPLOYEE_FORM.ROLE_LABEL' | translate }}</mat-label>
         <mat-form-field appearance="outline" class="w-100" color="primary">
-          <mat-select [(ngModel)]="formData.role" name="role" required placeholder="Sélectionner un rôle">
+          <mat-select [(ngModel)]="formData.role" name="role" required [placeholder]="'EMPLOYEE_FORM.ROLE_PLACEHOLDER' | translate">
             @for (r of roles; track r.value) {
-              <mat-option [value]="r.value">{{ r.viewValue }}</mat-option>
+              <mat-option [value]="r.value">{{ r.labelKey | translate }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
       </div>
 
-      <!-- 🟢 Organisation ID : Relié à formData.organizationId ! -->
-      <div class="col-lg-12 m-b-16">
-        <mat-label class="f-w-600 m-b-8 d-block">Organisation rattachée</mat-label>
+      <!-- Organisation ID -->
+      <div class="col-lg-6 m-b-16">
+        <mat-label class="f-w-600 m-b-8 d-block">{{ 'EMPLOYEE_FORM.ORGANIZATION_LABEL' | translate }}</mat-label>
         <mat-form-field appearance="outline" class="w-100" color="primary">
-          <mat-select [(ngModel)]="formData.organizationId" name="organizationId" placeholder="Sélectionner une organisation">
-            <mat-option [value]="null">-- Aucune organisation --</mat-option>
+          <mat-select [(ngModel)]="formData.organizationId" name="organizationId" [placeholder]="'EMPLOYEE_FORM.ORGANIZATION_PLACEHOLDER' | translate">
+            <mat-option [value]="null">{{ 'EMPLOYEE_FORM.NO_ORGANIZATION' | translate }}</mat-option>
             @for (org of organizationsList; track org.id) {
               <mat-option [value]="org.id">
                 {{ org.nom }}
@@ -80,10 +168,10 @@
 </mat-dialog-content>
 
 <mat-dialog-actions align="end" class="p-b-16 p-x-24">
-  <button mat-stroked-button color="warn" class="m-r-8" (click)="fermer()">
-    Annuler
+  <button mat-button class="m-r-8" (click)="fermer()">
+    {{ 'EMPLOYEE_FORM.CANCEL' | translate }}
   </button>
   <button mat-flat-button color="primary" [disabled]="!empForm.valid" (click)="soumettreFormulaire()">
-    {{ formData.id ? 'Enregistrer' : 'Créer' }}
+    {{ (formData.id ? 'EMPLOYEE_FORM.SAVE' : 'EMPLOYEE_FORM.CREATE') | translate }}
   </button>
 </mat-dialog-actions>

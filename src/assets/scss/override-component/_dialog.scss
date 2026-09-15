@@ -3,6 +3,7 @@
 
 @include mat.dialog-overrides(
   (
+    container-color: var(--mat-sys-surface),
     container-shape: var(--mat-sys-corner-small),
     subhead-size: 18px,
     subhead-weight: 600,

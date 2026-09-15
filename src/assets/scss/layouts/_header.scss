@@ -1,13 +1,17 @@
 @use "../variables" as *;
 
 html .topbar {
-  height: 48px;        // hauteur réduite
+  height: 48px;
   display: flex;
-  align-items: center; // centre verticalement les icônes et boutons
-  padding: 0 8px; 
+  align-items: center;
+  padding-inline: 8px;
+  background-color: var(--mat-sys-surface) !important; /* Fond dynamique sombre/clair */
+  color: var(--mat-sys-on-background);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
 
   i-tabler {
     stroke-width: 1.5px;
+    color: var(--mat-sys-on-background);
   }
 }
 
@@ -25,17 +29,12 @@ html .topbar {
   object-fit: cover;
 }
 
-
-
-
-// App Topstrip
-
 .app-topstrip {
   position: fixed;
   top: 0;
   z-index: 12;
   display: flex;
-  background: linear-gradient(90deg, #001138 0%, #001E66 100%);
+  background: linear-gradient(90deg, #001138 0%, #001e66 100%);
 
   @media (max-width: 991px) {
     flex-direction: column;
@@ -61,14 +60,14 @@ html .topbar {
   }
 
   .linkbar {
-    border-left: 1px solid rgba(255, 255, 255, 0.4);
-    padding-left: 20px;
+    border-inline-start: 1px solid rgba(255, 255, 255, 0.4); // Remplace border-left
+    padding-inline-start: 20px; // Remplace padding-left
   }
 
   .text-linear-gradient {
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    background: linear-gradient(90deg, #FFFFFF 0%, #3772FF 100%);
+    background: linear-gradient(90deg, #ffffff 0%, #3772ff 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -81,17 +80,16 @@ html .topbar {
 
     &:hover,
     &:active {
-      background-color: #3772FF;
+      background-color: #3772ff;
     }
-
   }
 
   .get-pro-btn {
-    background-color: #3772FF;
+    background-color: #3772ff;
     border-radius: 4px;
 
     &:hover {
-      background-color: #5D87FF;
+      background-color: #5d87ff;
     }
   }
 
@@ -100,7 +98,7 @@ html .topbar {
 
     &:hover,
     &:active {
-      color: #5D87FF !important;
+      color: #5d87ff !important;
 
       .mat-mdc-button-persistent-ripple {
         &::before {
@@ -109,5 +107,4 @@ html .topbar {
       }
     }
   }
-
 }

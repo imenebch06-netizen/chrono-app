@@ -10,6 +10,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { TranslateModule } from '@ngx-translate/core';
 
 import { EmployeStatusService } from 'src/app/services/employe-status.service';
 import { PointageService } from 'src/app/services/pointage.service';
@@ -28,7 +29,8 @@ import { UserService } from 'src/app/services/user.service';
     MatInputModule,
     TablerIconsModule,
     MatChipsModule,
-    MatIconModule
+    MatIconModule,
+    TranslateModule
   ],
   templateUrl: './mes-employes.component.html'
 })
@@ -87,55 +89,56 @@ export class MesEmployesComponent implements OnInit {
     const day = String(now.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
+  private extraireTableau(res: any): any[] {
+    if (!res) return [];
+    if (Array.isArray(res)) return res;
+    return res.data || res.users || res.subordinates || res.pointages || res.demandes || res.plannings || [];
+  }
 
   chargerDonnees(isAdmin: boolean): void {
     const aujourdhuiStr = this.getLocalDateString();
 
-    // 1️⃣ Requête Liste des employés (Sécurisée)
+    
     const reqEmployes$ = (this.viewMode === 'ALL') 
       ? this.userService.getUsers().pipe(catchError(err => { console.error('Erreur users:', err); return of([]); }))
       : this.userService.getMonEquipe().pipe(catchError(err => { console.error('Erreur equipe:', err); return of([]); }));
 
-    // 2️⃣ Requête Pointages selon le rôle
+   
     const reqPointages$ = isAdmin
       ? this.pointageService.getPointagesParDate(aujourdhuiStr).pipe(catchError(() => of([])))
       : this.pointageService.getMonEquipe(aujourdhuiStr).pipe(catchError(() => of([])));
 
-    // 3️⃣ Requête Demandes selon le rôle
+   
     const reqDemandes$ = isAdmin
       ? this.demandeService.getAllDemandes().pipe(catchError(() => of([])))
       : this.demandeService.getAllMyTeam().pipe(catchError(() => of([])));
 
-    // 4️⃣ Requête Plannings (Sécurisée)
-    const reqPlannings$ = this.planningService.getGlobalPlanning(aujourdhuiStr, aujourdhuiStr)
-      .pipe(catchError(() => of([])));
+   
+const reqPlannings$ = isAdmin
+  ? this.planningService.getGlobalPlanning(aujourdhuiStr, aujourdhuiStr).pipe(catchError(err => { console.error('Erreur planning global:', err); return of([]); }))
+  : this.planningService.getMonEquipePlanning(aujourdhuiStr, aujourdhuiStr).pipe(catchError(err => { console.error('Erreur planning équipe:', err); return of([]); }));
 
-    // 🟢 forkJoin blindé : Si une API échoue, les autres continuent d'alimenter la page !
+    
     forkJoin({
-      resEmployes: reqEmployes$,
-      pointages: reqPointages$,
-      demandes: reqDemandes$,
-      plannings: reqPlannings$
+     resEmployes: reqEmployes$,
+      resPointages: reqPointages$,
+      resDemandes: reqDemandes$,
+      resPlannings: reqPlannings$
     }).subscribe({
-      next: ({ resEmployes, pointages, demandes, plannings }) => {
-        let employes: any[] = [];
-        const res: any = resEmployes;
-
-        if (this.viewMode === 'ALL') {
-          employes = Array.isArray(res) ? res : (res?.data || res?.users || []);
-        } else {
-          employes = Array.isArray(res) 
-            ? res 
-            : (res?.subordinates || res?.data || res?.users || []);
-        }
-
+     next: ({ resEmployes, resPointages, resDemandes, resPlannings }) => {
+       
+        const employes = this.extraireTableau(resEmployes);
+        const pointages = this.extraireTableau(resPointages);
+        const demandes = this.extraireTableau(resDemandes);
+        const plannings = this.extraireTableau(resPlannings);
+      // logs pour debug
         console.log('--- 📊 DEBUG RECEPTION PARALLELE ---');
         console.log('Employés trouvés:', employes.length);
         console.log('Pointages récupérés:', pointages);
         console.log('Demandes récupérées:', demandes);
         console.log('Plannings récupérés:', plannings);
 
-        // ⚡ Calcul de l'état en temps réel pour chaque employé
+        
         this.employesListeComplete = employes.map(emp => {
           const statusInfo = this.statusService.calculerEtat(emp.id, pointages, demandes, plannings, aujourdhuiStr);
           return {
@@ -144,12 +147,12 @@ export class MesEmployesComponent implements OnInit {
             etatLibelle: statusInfo.libelle
           };
         });
-        // Transmission des données à la table
+        
 if (this.dataTable) {
   this.dataTable.setData(this.employesListeComplete);
 }
 
-        // 📺 Transmission à la table avec petit délai pour laisser la vue Angular s'initialiser
+        
         setTimeout(() => {
           if (this.dataTable) {
             this.dataTable.setData(this.employesListeComplete);
@@ -160,7 +163,7 @@ if (this.dataTable) {
     });
   }
 
-  // 🟢 Action au clic sur les Chips de filtres
+  
   filtrerParEtat(etat: string): void {
     this.filtreEtatActif = etat;
     if (this.dataTable) {
@@ -168,14 +171,14 @@ if (this.dataTable) {
     }
   }
 
-  // 🟢 Action lors de la recherche par mot-clé
+ 
   filtrerTable(event: Event): void {
     if (this.dataTable) {
       this.dataTable.appliquerFiltre(event);
     }
   }
 
-  // 🟢 Action du bouton Ajouter un employé
+  
   ajouterEmploye(): void {
     if (this.dataTable) {
       this.dataTable.ajouterUnEmploye();

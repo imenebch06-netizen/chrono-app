@@ -4,6 +4,7 @@ import { Observable, forkJoin, map, catchError, of } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { PersonalStats, TeamStats, AdminGlobalStats, MembreStatSummary } from '../models/statistiques.model';
 import { EmployeStatusService } from './employe-status.service';
+import { LanguageService } from './language.service';
 
 @Injectable({
   providedIn: 'root',
@@ -11,6 +12,7 @@ import { EmployeStatusService } from './employe-status.service';
 export class StatistiquesService {
   private http = inject(HttpClient);
   private statusService = inject(EmployeStatusService);
+  private languageService = inject(LanguageService);
   private baseUrl = environment.apiUrl;
 
   private getStartOfWeekDate(): string {
@@ -54,9 +56,7 @@ export class StatistiquesService {
     );
   }
 
-  // =========================================================================
-  // 1. STATISTIQUES PERSONNELLES (EMPLOYÉ CONNECTÉ)
-  // =========================================================================
+
   getPersonalStats(): Observable<PersonalStats> {
     const mondayStr = this.getStartOfWeekDate();
 
@@ -114,9 +114,7 @@ export class StatistiquesService {
     );
   }
 
-  // =========================================================================
-  // 2. STATISTIQUES D'ÉQUIPE (MANAGER)
-  // =========================================================================
+  
   getTeamStats(): Observable<TeamStats> {
     const today = this.getTodayDate();
 
@@ -153,9 +151,14 @@ export class StatistiquesService {
           today
         ));
         const presentsCount = statuts.filter((status) => status.etat === 'PRESENT').length;
-        const enCongeCount = statuts.filter((status) => status.etat === 'EN_CONGE' || status.etat === 'ABSENT').length;
+const enCongeCount = statuts.filter((status) =>
+  status.etat === 'CONGE' ||
+  status.etat === 'RECUPERATION' ||
+  status.etat === 'ABSENT_JUSTIFIE' ||
+  status.etat === 'ABSENT_NON_JUSTIFIE'
+).length;
 
-        // Fusion et dédoublonnage strict par ID
+       
         const demandesMap = new Map<number, any>();
         [...demandesEnAttenteList, ...demandesValideesList].forEach((d) => {
           if (d && d.id) {
@@ -192,9 +195,7 @@ export class StatistiquesService {
     );
   }
 
-  // =========================================================================
-  // 3. STATISTIQUES GLOBALES (ADMINISTRATEUR)
-  // =========================================================================
+
   getAdminStats(): Observable<AdminGlobalStats> {
     const today = this.getTodayDate();
 
@@ -246,14 +247,19 @@ export class StatistiquesService {
           totalOrganizations: organizationsList.length,
           tauxPresenceGlobal,
           demandesEnAttenteTotales: demandesEnAttenteList.length,
-          repartitionDemandesGlobales: {
-            labels: ['Congés Payés', 'Absences', 'Récupérations'],
-            series: [
-              toutesLesDemandesList.filter((d) => this.normalizeType(d.typeDemande || d.type_demande || d.type) === 'CONGE').length,
-              toutesLesDemandesList.filter((d) => this.normalizeType(d.typeDemande || d.type_demande || d.type) === 'ABSENCE').length,
-              toutesLesDemandesList.filter((d) => this.normalizeType(d.typeDemande || d.type_demande || d.type) === 'RECUPERATION').length,
-            ],
-          },
+         // Dans getAdminStats()
+repartitionDemandesGlobales: {
+  labels: [
+    'ADMIN_STATS.TYPES.CONGES',
+    'ADMIN_STATS.TYPES.ABSENCES',
+    'ADMIN_STATS.TYPES.RECUPERATIONS'
+  ],
+  series: [
+    toutesLesDemandesList.filter((d) => this.normalizeType(d.typeDemande || d.type_demande || d.type) === 'CONGE').length,
+    toutesLesDemandesList.filter((d) => this.normalizeType(d.typeDemande || d.type_demande || d.type) === 'ABSENCE').length,
+    toutesLesDemandesList.filter((d) => this.normalizeType(d.typeDemande || d.type_demande || d.type) === 'RECUPERATION').length,
+  ],
+}
         };
       })
     );

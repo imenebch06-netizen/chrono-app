@@ -1,0 +1,11 @@
+<button
+  mat-icon-button
+  type="button"
+  class="d-flex align-items-center justify-content-center theme-toggle-btn"
+  [attr.aria-label]="(theme() === 'dark' ? 'COMMON.SWITCH_TO_LIGHT' : 'COMMON.SWITCH_TO_DARK') | translate"
+  [matTooltip]="(theme() === 'dark' ? 'COMMON.SWITCH_TO_LIGHT' : 'COMMON.SWITCH_TO_DARK') | translate"
+  (click)="themeService.toggleTheme()"
+>
+  <mat-icon>{{ theme() === 'dark' ? 'light_mode' : 'dark_mode' }}</mat-icon>
+</button>
+

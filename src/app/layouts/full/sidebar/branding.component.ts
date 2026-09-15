@@ -33,7 +33,7 @@ import { RouterModule } from '@angular/router';
         font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" 
         font-weight="900" 
         font-size="52" 
-        fill="#0F172A" 
+        fill="var(--mat-sys-on-background, #0F172A)" 
         letter-spacing="-0.5">CHRONO</text>
 
   <!-- Sous-titre TIME MANAGEMENT -->

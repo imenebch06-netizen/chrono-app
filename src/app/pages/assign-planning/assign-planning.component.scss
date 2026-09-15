@@ -1,9 +1,9 @@
-
-
 .card-dash {
   border-radius: 12px;
   overflow: hidden;
-  background: #fff;
+  /* Utilisation de la surface dynamique au lieu de #fff */
+  background-color: var(--mat-sys-surface) !important;
+  color: var(--mat-sys-on-background);
   transition: box-shadow 0.3s ease;
 
   &:hover {
@@ -27,8 +27,10 @@
   }
 
   mat-card-content {
-    background-color: #fafafa;
-    border-top: 1px solid var(--mat-sys-primary-fixed-dim);
+    /* Utilisation de la couleur de conteneur au lieu de #fafafa */
+    background-color: var(--mat-sys-surface-container-lowest) !important;
+    color: var(--mat-sys-on-background);
+    border-top: 1px solid var(--mat-sys-outline-variant);
   }
 }
 

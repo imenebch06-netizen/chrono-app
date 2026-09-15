@@ -6,7 +6,7 @@
   <title>Chrono | Plateforme de Gestion du Temps et des Activités</title>
   <base href="/" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" type="image/svg+xml" href="assets/gemini-svg.svg?v=2">
+  <link rel="icon" type="image/svg+xml" href="assets/logo-svg-chrono.svg">
   <link rel="preconnect" href="https://fonts.gstatic.com" />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
@@ -14,6 +14,21 @@
 </head>
 
 <body class="mat-typography">
+<script>
+  
+  (function () {
+    try {
+      var saved = window.localStorage.getItem('chrono-theme');
+      var mode = (saved === 'dark' || saved === 'light')
+        ? saved
+        : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      var themeClass = mode === 'dark' ? 'dark-theme' : 'light-theme';
+      document.documentElement.classList.add('blue_theme', themeClass);
+      document.body.classList.add('blue_theme', themeClass);
+    } catch (e) {}
+  })();
+</script>
+
   <app-root></app-root>
 </body>
 

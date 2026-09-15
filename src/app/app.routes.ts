@@ -23,7 +23,7 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
 
-  // 🟢 2. PAGES DE CONNEXION / INSCRIPTION (Plein écran)
+  
   {
     path: 'authentication',
     component: BlankComponent,
@@ -33,7 +33,7 @@ export const routes: Routes = [
       ),
   },
 
-   // 🟢 3. APPLICATION PRINCIPALE (Protégée par AuthGuard avec Menu / Sidebar)
+   
   {
     path: '',
     component: FullComponent,
@@ -41,7 +41,7 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        redirectTo: 'profil', // Redirection par défaut vers la page Profil
+        redirectTo: 'profil', 
         pathMatch: 'full',
       },
 
@@ -55,7 +55,7 @@ export const routes: Routes = [
       // --- SECTION ADMINISTRATION ---
        {path: 'mes-employes',
         children: [
-          // 1. Accessible par TOUS les employés
+         
           {
             path: '',
             loadComponent: () =>
@@ -90,8 +90,8 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/mes-employes/mes-employes.component').then((m) => m.MesEmployesComponent),
         data: {
-          isReadOnly: true,          // 🔒 Masque Ajouter / Modifier / Supprimer
-          viewMode: 'TEAM'           // 👥 Charge uniquement l'équipe du manager
+          isReadOnly: true,          
+          viewMode: 'TEAM'           
         }
       },
       {
@@ -100,7 +100,7 @@ export const routes: Routes = [
           import('./pages/assign-planning/assign-planning.component').then((m) => m.AssignPlanningComponent),
         data: {
           isReadOnly: true,
-          viewMode: 'WITHOUT_PLANNING' // 📅 Filtre les employés sans planning
+          viewMode: 'WITHOUT_PLANNING' 
         }
       },
       {
@@ -129,19 +129,19 @@ export const routes: Routes = [
       {
         path: 'statistiques',
         children: [
-          // 1. Accessible par TOUS les employés
+          
           {
             path: 'mes-statistiques',
             loadComponent: () =>
               import('./pages/personal-stats/personal-stats.component').then(m => m.PersonalStatsComponent),
           },
-          // 2. Accessible par les Employés GÉRANT une Organisation (Manager) ou Admin
+         
           {
             path: 'equipe',
             loadComponent: () =>
               import('./pages/team-stats/team-stats.component').then(m => m.TeamStatsComponent),
           },
-          // 3. Accessible UNIQUEMENT par l'ADMIN
+          
           {
             path: 'global',
             loadComponent: () =>
@@ -154,7 +154,7 @@ export const routes: Routes = [
 
 
 
-  // 🟢 4. REDIRECTION PAR DÉFAUT SI ROUTE INEXISTANTE
+  
   {
     path: '**',
     redirectTo: 'authentication/login',

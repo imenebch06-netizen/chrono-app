@@ -1,4 +1,6 @@
-html .light-theme {
+/* Remplacez la déclaration de html .light-theme par ceci : */
+html.light-theme,
+body.light-theme {
   color-scheme: light;
   --mat-sys-background: #fff;
   --mat-sys-surface-bright: #f2f6fa;

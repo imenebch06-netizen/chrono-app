@@ -4,3 +4,17 @@
   font-size: 24px;
   color: var(--mat-sys-primary); // ou ta variable SCSS
 }
+/* Dans data-table.component.scss */
+table, 
+.mat-mdc-table,
+.mat-mdc-row,
+.mat-mdc-header-row {
+  background-color: var(--mat-sys-surface) !important;
+  color: var(--mat-sys-on-background) !important;
+}
+
+.mat-mdc-cell, 
+.mat-mdc-header-cell {
+  color: var(--mat-sys-on-background) !important;
+  border-bottom-color: var(--mat-sys-outline-variant) !important;
+}

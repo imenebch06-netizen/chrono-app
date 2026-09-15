@@ -27,6 +27,7 @@
     "ORGANIZATIONS": "Organizations",
     "COMPANY_STRUCTURE": "Company Structure"
   },
+  
   "HEADER": {
     "NOTIFICATIONS": "Notifications",
     "UNREAD_SUFFIX": "unread",
@@ -38,5 +39,473 @@
     "PROFILE_ARIA": "User profile",
     "DEFAULT_FIRSTNAME": "System",
     "DEFAULT_LASTNAME": "Admin"
+  },
+  
+  "NOTIFICATIONS": {
+    "TYPES": {
+      "DEMANDE_CREEE": {
+        "TITLE": "New leave request",
+        "MESSAGE_PARAMS": "{{ author }} submitted a {{ leaveType }} request."
+      },
+      "DEMANDE_VALIDEE": {
+        "TITLE": "Request approved",
+        "MESSAGE_PARAMS": "Your {{ leaveType }} request was approved.",
+        "MESSAGE_PARAMS_BY": "Your {{ leaveType }} request was approved by {{ validator }}."
+      },
+      "DEMANDE_REFUSEE": {
+        "TITLE": "Request rejected",
+        "MESSAGE_PARAMS": "Your {{ leaveType }} request was rejected.",
+        "MESSAGE_PARAMS_BY": "Your {{ leaveType }} request was rejected by {{ validator }}."
+      }
+    }
   }
+,
+  "AUTH": {
+    "PORTAL_TITLE": "HR & Organizations Portal",
+    "PORTAL_SUBTITLE": "Secure space reserved for employees and managers",
+    "SECTION_LABEL": "Authentication",
+    "EMAIL_LABEL": "Email address",
+    "EMAIL_PLACEHOLDER": "e.g. admin@company.com",
+    "PASSWORD_LABEL": "Password",
+    "REMEMBER_ME": "Remember me",
+    "FORGOT_PASSWORD": "Forgot password?",
+    "LOGIN_BUTTON": "Sign in",
+    "LOGIN_LOADING": "Signing in...",
+    "DEFAULT_ERROR": "Incorrect credentials",
+    "FORGOT_PASSWORD_MESSAGE": "🔒 To reset your password, please contact your administrator or HR department.",
+    "FORGOT_PASSWORD_ACK": "Got it",
+    "FORGOT_TITLE": "Forgot password",
+    "FORGOT_SUBTITLE": "Enter your email address to receive the link",
+    "FORGOT_BUTTON": "Send link",
+    "FORGOT_LOADING": "Sending...",
+    "RESET_TITLE": "Password Reset",
+    "RESET_SUBTITLE": "Enter your new password",
+    "NEW_PASSWORD_LABEL": "New password",
+    "RESET_BUTTON": "Update password",
+    "RESET_LOADING": "Updating...",
+    "BACK_TO_LOGIN": "Back to login",
+    "VERIFYING_TOKEN": "Verifying link validity...",
+    "INVALID_TOKEN_TITLE": "Invalid or expired link",
+    "INVALID_TOKEN_SUBTITLE": "This reset link is no longer valid or has already been used.",
+    "REQUEST_NEW_LINK": "Request new link"
+  }
+
+,
+"EMPLOYEE_TABLE": {
+    "COLUMNS": {
+      "LAST_NAME": "Last Name",
+      "FIRST_NAME": "First Name",
+      "EMAIL": "Email",
+      "ADDRESS": "Address",
+      "ROLE": "Role",
+      "ORGANIZATION": "Organization",
+      "STATUS": "Status",
+      "ACTIONS": "Actions"
+    },
+    "STATUS": {
+      "PRESENT": "Present",
+      "ON_LEAVE": "On Leave",
+      "RECOVERY": "Time Off",
+      "REST": "Rest",
+      "JUSTIFIED_ABSENCE": "Justified Abs.",
+      "UNJUSTIFIED_ABSENCE": "Unjustified Abs.",
+      "NOT_ASSIGNED": "Not Assigned"
+    },
+    "ACTIONS": {
+      "VIEW_DETAILS": "View details",
+      "EDIT": "Edit",
+      "DELETE": "Delete"
+    },
+    "NO_DATA": "No employees match the criteria.",
+    "PAGINATOR_ARIA": "Select employee page",
+    "NOT_ATTACHED": "Not assigned",
+    "ORG_PREFIX": "Org #",
+    "DIALOG": {
+      "DELETE_TITLE": "Delete Employee",
+      "DELETE_CONFIRM_MSG": "Are you sure you want to delete {{name}}?",
+      "YES_DELETE": "Yes, delete",
+      "CANCEL": "Cancel"
+    },
+    "NOTIFICATIONS": {
+      "CREATE_SUCCESS": "✅ New employee created successfully!",
+      "CREATE_ERROR": "❌ Creation error: ",
+      "INVALID_DATA": "Invalid data",
+      "UPDATE_SUCCESS": "✅ Employee updated successfully!",
+      "UPDATE_ERROR": "❌ Error updating employee",
+      "DELETE_SUCCESS": "✅ Employee \"{{name}}\" deleted successfully!",
+      "DELETE_ERROR": "❌ Cannot delete: ",
+      "SERVER_ERROR": "Server error",
+      "CLOSE": "Close"
+    }
+  },"ORG_TABLE": {
+    "COLUMNS": {
+      "ORG_NAME": "Organization Name",
+      "PARENT_ORG": "Parent Org.",
+      "MANAGER": "Manager",
+      "ACTIONS": "Actions"
+    },
+    "ACTIONS": {
+      "CHANGE_MANAGER": "Change manager",
+      "ASSIGN_MANAGER": "Assign a manager",
+      "EDIT_ORG": "Edit organization",
+      "DELETE": "Delete"
+    },
+    "ROOT_NONE": "Root (None)",
+    "NOT_ASSIGNED": "Unassigned",
+    "NOT_DEFINED": "Not defined",
+    "NO_DATA": "No organizations found.",
+    "PAGINATOR_ARIA": "Select organization page",
+    "ID_PREFIX": "ID #",
+    "ORG_PREFIX": "Org #",
+    "MANAGER_PREFIX": "Manager #",
+    "DIALOG": {
+      "DELETE_TITLE": "Delete Organization",
+      "DELETE_CONFIRM_MSG": "Are you sure you want to delete \"{{name}}\"?",
+      "YES_DELETE": "Yes, delete",
+      "CANCEL": "Cancel"
+    },
+    "NOTIFICATIONS": {
+      "ASSIGN_MANAGER_SUCCESS": "Manager assigned successfully!",
+      "ASSIGN_MANAGER_ERROR": "Error assigning manager.",
+      "DELETE_SUCCESS": "Organization \"{{name}}\" deleted successfully.",
+      "DELETE_ERROR": "An error occurred during deletion.",
+      "CLOSE": "Close"
+    }
+  },"CONFIRM_DIALOG": {
+    "DEFAULT_TITLE": "Confirm deletion",
+    "IRREVERSIBLE_ACTION": "Irreversible action",
+    "DEFAULT_MESSAGE": "Are you sure you want to delete this item? This action cannot be undone.",
+    "DEFAULT_CANCEL": "Cancel",
+    "DEFAULT_CONFIRM": "Delete"
+  },
+  "ASSIGN_MANAGER_DIALOG": {
+    "TITLE": "Assign a Manager",
+    "ORGANIZATION": "Organization",
+    "SELECT_LABEL": "Select a manager",
+    "NONE_OPTION": "-- None (Remove manager) --",
+    "CANCEL": "Cancel",
+    "SAVE": "Save"
+  },
+  "EMPLOYEE_DETAILS": {
+    "LOADING": "Loading employee profile...",
+    "EMPLOYEE_ID": "Employee ID:",
+    "SUBTITLE": "Detailed employee profile",
+    "EMAIL": "Email Address",
+    "EMAIL_TAG": "Work Email",
+    "ADDRESS": "Residential Address",
+    "ADDRESS_TAG": "Home",
+    "NOT_PROVIDED": "Not specified",
+    "ORGANIZATION": "Organization Affiliation",
+    "ORG_PREFIX": "Organization #",
+    "NOT_ATTACHED": "Not assigned",
+    "ORG_TAG": "Structure",
+    "BACK_TO_LIST": "Back to list"
+  },
+  "EDIT_ORG_DIALOG": {
+    "EDIT_TITLE": "Edit organization",
+    "ADD_TITLE": "Add organization",
+    "NAME_LABEL": "Organization name *",
+    "NAME_PLACEHOLDER": "E.g.: General Management",
+    "TYPE_LABEL": "Organization type *",
+    "TYPE_PREFIX": "Type #",
+    "PARENT_LABEL": "Parent Organization (Upper ID)",
+    "NONE_PARENT_OPTION": "-- None (Root) --",
+    "CANCEL": "Cancel",
+    "SAVE": "Save"
+  },
+  "EMPLOYEE_FORM": {
+    "EDIT_TITLE": "Edit Employee",
+    "ADD_TITLE": "Add New Employee",
+    "LASTNAME_LABEL": "Last Name",
+    "LASTNAME_PLACEHOLDER": "E.g.: SMITH",
+    "FIRSTNAME_LABEL": "First Name",
+    "FIRSTNAME_PLACEHOLDER": "E.g.: John",
+    "EMAIL_LABEL": "Email",
+    "EMAIL_PLACEHOLDER": "E.g.: john.smith@company.com",
+    "PASSWORD_LABEL": "Password",
+    "PASSWORD_UNCHANGED": "(unchanged if empty)",
+    "ADDRESS_LABEL": "Address",
+  "ADDRESS_PLACEHOLDER": "Ex: 14 Rue de la Paix, Paris",
+  "ADDRESS_EN_PLACEHOLDER": "Ex: 14 Main Street, London",
+  "LOCALISATION_LABEL": "Location(Bejaia,Algeria)",
+    "ROLE_LABEL": "Role",
+    "ROLE_PLACEHOLDER": "Select a role",
+    "ORGANIZATION_LABEL": "Attached Organization",
+    "ORGANIZATION_PLACEHOLDER": "Select an organization",
+    "NO_ORGANIZATION": "-- No organization --",
+    "CANCEL": "Cancel",
+    "SAVE": "Save",
+    "CREATE": "Create",
+    "ROLES": {
+      "ADMIN": "Administrator (ADMIN)",
+      "EMPLOYEE": "Employee (EMPLOYEE)"
+    }
+  },
+  "ADMIN_STATS": {
+    "TITLE": "Company Overview",
+    "SUBTITLE": "Global supervision and administrative key metrics",
+    "CARDS": {
+      "TOTAL_EMPLOYEES": "Total Employees",
+      "ORGANIZATIONS": "Organizations",
+      "GLOBAL_ATTENDANCE": "Overall Attendance",
+      "PENDING_REQUESTS": "Pending Requests"
+    },
+    "TYPES": {
+      "CONGES": "Paid Leave",
+      "ABSENCES": "Absences",
+      "RECUPERATIONS": "Recovery Days"
+    },
+    "CHART_TITLE": "Global absence request distribution",
+    "CHART_TOTAL": "Total",
+    "LOADING": "Loading company data..."
+  },
+  "ASSIGN_PLANNING": {
+    "CONFIG_TITLE": "Schedule Configuration to Assign",
+    "WORK_TYPE_LABEL": "Work Type",
+    "WORK_TYPES": {
+      "NORMAL": "NORMAL",
+      "SHIFT_3X8": "3X8 SHIFT",
+      "SHIFT_4X6": "4x6 Shift",
+      "WEEKEND_FERIE": "Weekend & Public Holidays",
+      "CONTINGENCE": "Contingency Shift"
+    },
+    "SHIFT_TYPE_LABEL": "Shift Type",
+    "SHIFT_TYPES": {
+      "MATIN": "MORNING (06:00 - 14:00)",
+      "SOIR": "EVENING (14:00 - 22:00)",
+      "NUIT": "NIGHT (22:00 - 06:00)"
+    },
+    "REST_DAYS_LABEL": "Days Off",
+    "START_DATE_LABEL": "Start Date",
+    "END_DATE_LABEL": "End Date",
+    "START_TIME_LABEL": "Start Time",
+    "END_TIME_LABEL": "End Time",
+    "SUBMIT_BTN": "Assign schedule to selected employees",
+    "SELECT_EMPLOYEES_TITLE": "Select employees without schedule",
+    "SEARCH_LABEL": "Search...",
+    "SEARCH_PLACEHOLDER": "Name, email...",
+    "DAYS": {
+      "MONDAY": "Monday",
+      "TUESDAY": "Tuesday",
+      "WEDNESDAY": "Wednesday",
+      "THURSDAY": "Thursday",
+      "FRIDAY": "Friday",
+      "SATURDAY": "Saturday",
+      "SUNDAY": "Sunday"
+    },
+    "SNACKBAR": {
+      "SELECT_AT_LEAST_ONE": "⚠️ Please select at least one employee from the table below.",
+      "SUCCESS": "✅ Schedule assigned successfully!",
+      "ERROR": "❌ Error assigning schedule.",
+      "CLOSE": "Close",
+      "OK": "OK"
+    }
+  },
+  "DEMANDES": {
+    "TITLE": "Leave & Absence Requests",
+    "SUBTITLE": "Submit your requests and track their validation status.",
+    "NO_ENTITY": "No entity",
+    "PERIOD": "From {{start}} to {{end}}",
+    "REASON_LABEL": "Reason",
+    "CONFIRM_CANCEL": "Are you sure you want to cancel this request?",
+    "TABS": {
+      "MY_REQUESTS": "My Requests",
+      "TO_VALIDATE": "Requests to Validate"
+    },
+    "FORM": {
+      "NEW_REQUEST": "New Request",
+      "REQUEST_TYPE": "Request Type",
+      "LEAVE_TYPE": "Leave Type",
+      "LEAVE_TYPE_PLACEHOLDER": "e.g.: Paid Leave, Sick Leave, Unpaid Leave",
+      "HOURS_TO_RECOVER": "Hours to Recover (Max 8h)",
+      "HOURS_PLACEHOLDER": "e.g.: 7.5",
+      "RECOVERY_DATE": "Recovery Date",
+      "START_DATE": "Start Date",
+      "END_DATE": "End Date",
+      "REASON": "Reason",
+      "REASON_PLACEHOLDER": "Reason for the request...",
+      "ATTACHMENT": "Attachment (optional)",
+      "SUBMIT": "Submit Request",
+      "SUBMITTING": "Submitting..."
+    },
+    "HISTORY": {
+      "TITLE": "My Request History",
+      "EMPTY_TITLE": "No requests submitted",
+      "EMPTY_SUBTITLE": "Your submitted requests will appear here."
+    },
+    "VALIDATION": {
+      "PENDING_COUNT": "Pending Requests ({{count}})",
+      "EMPTY_TITLE": "No pending requests",
+      "EMPTY_SUBTITLE": "All team requests have been processed.",
+      "TYPE_LABEL": "Type"
+    },
+    "ACTIONS": {
+      "CANCEL": "Cancel",
+      "APPROVE": "Approve",
+      "REJECT": "Reject",
+      "VIEW_ATTACHMENT": "View Attachment"
+    },
+    "TYPES": {
+      "CONGE": "LEAVE",
+      "ABSENCE": "ABSENCE",
+      "RECUPERATION": "RECOVERY",
+      "AUTRE": "OTHER"
+    },
+    "STATUS": {
+      "EN_ATTENTE": "Pending",
+      "VALIDE": "Approved",
+      "REFUSE": "Rejected"
+    },
+    "SNACKBAR": {
+      "SUCCESS": "Request submitted successfully!",
+      "ERROR_DEFAULT": "An error occurred during submission.",
+      "CLOSE": "Close"
+    }
+  },
+  "EMPLOYEES": {
+    "SEARCH_LABEL": "Search employee...",
+    "SEARCH_PLACEHOLDER": "Name, department...",
+    "ADD_EMPLOYEE": "Add Employee",
+    "FILTERS": {
+      "ARIA_LABEL": "Filter by status",
+      "ALL": "All",
+      "PRESENT": "Present",
+      "LEAVE": "On Leave",
+      "RECOVERY": "Recovery",
+      "REST": "Rest Day",
+      "UNASSIGNED": "Not Assigned",
+      "ABSENT_JUSTIFIED": "Justified Absence",
+      "ABSENT_UNJUSTIFIED": "Unjustified Absence"
+    }
+  },
+  "POINTAGES": {
+    "WEEK_START_LABEL": "Week start (Sunday)",
+    "WEEK_CREDIT_DEBIT": "Weekly Credit/Debit: {{hours}}h",
+    "GLOBAL_RTT_BALANCE": "Global RTT Balance: {{hours}}h",
+    "TABLE": {
+      "EMPLOYEE": "Employee",
+      "DATE": "Date",
+      "CHECK_IN": "Clock In",
+      "CHECK_OUT": "Clock Out",
+      "WORK_DURATION": "Work Duration",
+      "CREDIT_DEBIT": "Credit / Debit",
+      "NO_DATA": "No clock-in records found."
+    },
+    "SNACKBAR": {
+      "ERROR_LOADING_WEEK": "❌ Error loading your week data",
+      "CLOSE": "Close"
+    }
+  },
+  "MY_SCHEDULE": {
+    "TITLE": "My Schedule",
+    "SUBTITLE": "Work Hours & Configuration",
+    "LOADING": "Loading schedule...",
+    "NO_PLANNING_TITLE": "No schedule assigned",
+    "NO_PLANNING_SUBTITLE": "Your manager has not assigned a work schedule yet.",
+    "DAILY_HOURS": "DAILY HOURS",
+    "WORK_DAY": "Work day",
+    "WORK_TYPE": "WORK TYPE",
+    "OFF_DAYS": "DAYS OFF",
+    "WEEKLY_REST": "Weekly rest",
+    "NONE": "None",
+    "ERROR_LOADING": "Unable to load schedule.",
+     "CURRENT_STATUS": "Current status",
+  "PERIOD": "Period"
+    
+  },
+  "DAYS": {
+    "MONDAY": "Monday",
+    "TUESDAY": "Tuesday",
+    "WEDNESDAY": "Wednesday",
+    "THURSDAY": "Thursday",
+    "FRIDAY": "Friday",
+    "SATURDAY": "Saturday",
+    "SUNDAY": "Sunday"
+  },
+  
+  "ORG_TREE": {
+    "VACANT": "Vacant",
+    "PERSONS_SHORT": "pers.",
+    "ERROR_LOADING": "Error loading organization tree:"
+  },
+  "ORGANIZATION": {
+    "SEARCH_LABEL": "Search organization...",
+    "SEARCH_PLACEHOLDER": "Ex: Management, IT...",
+    "ADD_BTN": "Add organization",
+    "ERROR_LOADING": "Error loading organization tree:",
+    "ERROR_CREATING": "Error creating organization:"
+  },
+  "PERSONAL_STATS": {
+    "TITLE": "Personal Dashboard",
+    "SUBTITLE": "Check your balances, hours, and activity tracking",
+    "LEAVE_BALANCE": "Leave Balance",
+    "RTT_BALANCE": "RTT Balance",
+    "CREDIT_DEBIT": "Credit / Debit",
+    "ATTENDANCE_RATE": "Attendance Rate",
+    "ABSENCE_DISTRIBUTION": "Absence Distribution",
+    "ACTIVITY_TRACKING": "Activity Tracking",
+    "DAYS": "days",
+    "LOADING": "Loading your data...",
+    "LEAVES": "Leaves",
+    "ABSENCES": "Absences",
+    "RECOVERIES": "Recoveries",
+    "TOTAL": "Total",
+    "WORKED_HOURS": "Worked Hours",
+    "CREDIT_DEBIT_HOURS": "Credit/Debit (h)",
+    "HOURS": "hours"
+  },
+  "POINTAGES-GL": {
+    "OBSERVATION_DATE": "Observation Date",
+    "IMPORTING": "Importing...",
+    "IMPORT_EXCEL_BTN": "Import Excel File",
+    "COL_EMPLOYEE": "Employee",
+    "COL_DATE": "Date",
+    "COL_ENTRY": "Check-in",
+    "COL_EXIT": "Check-out",
+    "COL_WORK_DURATION": "Work Duration",
+    "COL_CREDIT_DEBIT": "Credit / Debit",
+    "NO_DATA": "No clocking records found.",
+    "ERR_FETCH_POINTAGES": "Error fetching clocking records",
+    "ERR_FETCH_TEAM": "Error fetching your team's clocking records",
+    "IMPORT_SUCCESS": "Import completed successfully!",
+    "ERR_IMPORT": "Error importing Excel file",
+    "CLOSE": "Close"
+  },
+  "PROFIL": {
+    "TITLE": "My Profile",
+    "SUBTITLE": "View and verify your personal information.",
+    "SECURE_ACCOUNT": "Secure Account",
+    "LOADING": "Loading your information...",
+    "USER_ID": "User ID",
+    "MANAGER": "MANAGER",
+    "PERSONAL_SPACE_SUB": "Personal space and account settings",
+    "EMAIL_LABEL": "Email Address",
+    "MAIN_CONTACT": "Main Contact",
+    "ADDRESS_LABEL": "Address",
+    "NOT_SPECIFIED": "Not specified",
+    "HOME": "Home",
+    "ATTACHED_TO": "Attached to",
+    "ENTITY": "Entity",
+    "ENTITY_MANAGER": "Head of Entity",
+    "MANAGEMENT": "Management",
+    "MEMBER_SINCE": "Member since",
+    "SENIORITY": "Seniority",
+    "ERR_LOAD_DATA": "Unable to load profile data.",
+    "ERR_LOAD_PAGE": "Error loading page."
+  }
+  ,
+  "STATISTIQUES": {
+    "TEAM": {
+      "TITLE": "Team Statistics",
+      "SUBTITLE": "Real-time supervision",
+      "TOTAL_MEMBERS": "Total Members",
+      "PRESENT_TODAY": "Present Today",
+      "ABSENT_LEAVE": "Absent / On Leave",
+      "PENDING_APPROVAL": "Pending Validation",
+      "ABSENCE_BREAKDOWN": "Absence Distribution in Team",
+      "ABSENCE_COUNT": "Number of absences",
+      "LOADING": "Loading team statistics..."
+    }
+  }
+
 }

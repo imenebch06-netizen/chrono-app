@@ -1,0 +1,10 @@
+<button
+  mat-icon-button
+  type="button"
+  class="d-flex align-items-center justify-content-center lang-toggle-btn"
+  [attr.aria-label]="'COMMON.SWITCH_LANGUAGE' | translate"
+  [matTooltip]="'COMMON.SWITCH_LANGUAGE' | translate"
+  (click)="languageService.toggleLang()"
+>
+  <span class="lang-code">{{ currentLang() | uppercase }}</span>
+</button>

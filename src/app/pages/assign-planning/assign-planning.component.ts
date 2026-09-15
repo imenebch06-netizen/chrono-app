@@ -8,6 +8,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { DataTableTestComponent } from '../../components/data-table/data-table.component';
 import { PlanningService } from '../../services/planning.service';
@@ -25,7 +26,8 @@ import { PlanningService } from '../../services/planning.service';
     MatButtonModule,
     MatIconModule,
     MatSnackBarModule,
-    DataTableTestComponent
+    DataTableTestComponent,
+    TranslateModule
   ],
   templateUrl: './assign-planning.component.html',
   styleUrls: ['./assign-planning.component.scss']
@@ -34,19 +36,20 @@ export class AssignPlanningComponent implements OnInit {
   private fb = inject(FormBuilder);
   private snackBar = inject(MatSnackBar);
   private planningService = inject(PlanningService);
+  private translateService = inject(TranslateService);
 
   @ViewChild('dataTable') dataTable!: DataTableTestComponent;
 
   planningForm!: FormGroup;
 
   joursSemaine = [
-    { label: 'Lundi', value: 1 },
-    { label: 'Mardi', value: 2 },
-    { label: 'Mercredi', value: 3 },
-    { label: 'Jeudi', value: 4 },
-    { label: 'Vendredi', value: 5 },
-    { label: 'Samedi', value: 6 },
-    { label: 'Dimanche', value: 0 }
+    { labelKey: 'ASSIGN_PLANNING.DAYS.MONDAY', value: 1 },
+    { labelKey: 'ASSIGN_PLANNING.DAYS.TUESDAY', value: 2 },
+    { labelKey: 'ASSIGN_PLANNING.DAYS.WEDNESDAY', value: 3 },
+    { labelKey: 'ASSIGN_PLANNING.DAYS.THURSDAY', value: 4 },
+    { labelKey: 'ASSIGN_PLANNING.DAYS.FRIDAY', value: 5 },
+    { labelKey: 'ASSIGN_PLANNING.DAYS.SATURDAY', value: 6 },
+    { labelKey: 'ASSIGN_PLANNING.DAYS.SUNDAY', value: 0 }
   ];
 
   ngOnInit(): void {
@@ -60,57 +63,57 @@ export class AssignPlanningComponent implements OnInit {
       joursRepos: [[5, 6], Validators.required],
     });
 
-    // Ajustement automatique lors du changement de type de travail
-this.planningForm.get('type_travail')?.valueChanges.subscribe(type => {
-  switch (type) {
-    case 'NORMAL':
-      this.planningForm.patchValue({
-        typeShift: null,
-        heureDebut: '08:00',
-        heureFin: '16:00',
-        joursRepos: [5, 6] // Repos le week-end par défaut
-      });
-      break;
+    
+    this.planningForm.get('type_travail')?.valueChanges.subscribe(type => {
+      switch (type) {
+        case 'NORMAL':
+          this.planningForm.patchValue({
+            typeShift: null,
+            heureDebut: '08:00',
+            heureFin: '16:00',
+            joursRepos: [5, 6]
+          });
+          break;
 
-    case 'WEEKEND_FERIE':
-      this.planningForm.patchValue({
-        typeShift: 'WEEKEND',
-        heureDebut: '06:00',
-        heureFin: '18:00',
-        joursRepos: [1, 2] // 💡 Repos déplacé en semaine (ex: Lundi = 1, Mardi = 2)
-      });
-      break;
+        case 'WEEKEND_FERIE':
+          this.planningForm.patchValue({
+            typeShift: 'WEEKEND',
+            heureDebut: '06:00',
+            heureFin: '18:00',
+            joursRepos: [1, 2]
+          });
+          break;
 
-    case 'SHIFT_3X8':
-      this.planningForm.patchValue({
-        typeShift: 'MATIN',
-        heureDebut: '06:00',
-        heureFin: '14:00',
-        joursRepos: [5, 6]
-      });
-      break;
+        case 'SHIFT_3X8':
+          this.planningForm.patchValue({
+            typeShift: 'MATIN',
+            heureDebut: '06:00',
+            heureFin: '14:00',
+            joursRepos: [5, 6]
+          });
+          break;
 
-    case 'SHIFT_4X6':
-      this.planningForm.patchValue({
-        typeShift: 'NUIT_PROFONDE',
-        heureDebut: '00:00',
-        heureFin: '06:00',
-        joursRepos: [] // 💡 Pas de jours de repos fixes par défaut (roulement continu)
-      });
-      break;
+        case 'SHIFT_4X6':
+          this.planningForm.patchValue({
+            typeShift: 'NUIT_PROFONDE',
+            heureDebut: '00:00',
+            heureFin: '06:00',
+            joursRepos: []
+          });
+          break;
 
-    case 'CONTINGENCE':
-      this.planningForm.patchValue({
-        typeShift: 'MAREE',
-        heureDebut: '08:00',
-        heureFin: '14:00',
-        joursRepos: [] // 💡 À définir au cas par cas selon les marées
-      });
-      break;
-  }
-});
+        case 'CONTINGENCE':
+          this.planningForm.patchValue({
+            typeShift: 'MAREE',
+            heureDebut: '08:00',
+            heureFin: '14:00',
+            joursRepos: []
+          });
+          break;
+      }
+    });
 
-    // Ajustement dynamique des heures lors du changement de sous-shift
+    
     this.planningForm.get('typeShift')?.valueChanges.subscribe(shift => {
       const currentType = this.planningForm.get('type_travail')?.value;
 
@@ -131,7 +134,11 @@ this.planningForm.get('type_travail')?.valueChanges.subscribe(type => {
     const employesSelectionnes = this.dataTable?.selection?.selected || [];
 
     if (employesSelectionnes.length === 0) {
-      this.snackBar.open('⚠️ Veuillez sélectionner au moins un employé dans le tableau ci-dessous.', 'Fermer', { duration: 4000 });
+      this.snackBar.open(
+        this.translateService.instant('ASSIGN_PLANNING.SNACKBAR.SELECT_AT_LEAST_ONE'),
+        this.translateService.instant('ASSIGN_PLANNING.SNACKBAR.CLOSE'),
+        { duration: 4000 }
+      );
       return;
     }
 
@@ -163,7 +170,11 @@ this.planningForm.get('type_travail')?.valueChanges.subscribe(type => {
 
     this.planningService.assignPlanning(payload).subscribe({
       next: () => {
-        this.snackBar.open('✅ Planning assigné avec succès !', 'OK', { duration: 3000 });
+        this.snackBar.open(
+          this.translateService.instant('ASSIGN_PLANNING.SNACKBAR.SUCCESS'),
+          this.translateService.instant('ASSIGN_PLANNING.SNACKBAR.OK'),
+          { duration: 3000 }
+        );
 
         const idsAssignes = employesSelectionnes.map(e => Number(e.id));
         this.dataTable.dataSource.data = this.dataTable.dataSource.data.filter(
@@ -173,7 +184,11 @@ this.planningForm.get('type_travail')?.valueChanges.subscribe(type => {
       },
       error: (err) => {
         console.error('Erreur assignation planning:', err);
-        this.snackBar.open('❌ Erreur lors de l\'assignation du planning.', 'Fermer', { duration: 4000 });
+        this.snackBar.open(
+          this.translateService.instant('ASSIGN_PLANNING.SNACKBAR.ERROR'),
+          this.translateService.instant('ASSIGN_PLANNING.SNACKBAR.CLOSE'),
+          { duration: 4000 }
+        );
       },
     });
   }
