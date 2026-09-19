@@ -11,7 +11,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-// A. Représente UN élément de planning dans le tableau
+
 export class CreatePlanningItemDto {
   @ApiProperty({ example: 24, description: "ID de l'employé concerné" })
   @IsInt()
@@ -36,7 +36,7 @@ export class CreatePlanningItemDto {
 
   @ApiProperty({
     example: 'NORMAL',
-    description: 'Type de régime : NORMAL, SHIFT_3X8, FLEXIBLE, REPOS',
+    description:'Type de régime : NORMAL, SHIFT_3X8, SHIFT_4X6, WEEKEND_FERIE, CONTINGENCE, FLEXIBLE',
   })
   @IsString()
   @IsNotEmpty()
@@ -54,7 +54,9 @@ export class CreatePlanningItemDto {
   @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
   heureFin?: string;
 
-  @ApiPropertyOptional({ example: 'MATIN', description: 'MATIN, SOIR, NUIT' })
+  @ApiPropertyOptional({example: 'NUIT_PROFONDE',
+    description:
+      '3X8: MATIN, SOIR, NUIT | 4X6: NUIT_PROFONDE, MATIN, APRES_MIDI, SOIR | Spéciaux: WEEKEND, MAREE', })
   @IsOptional()
   @IsString()
   typeShift?: string;
@@ -76,7 +78,7 @@ export class CreatePlanningItemDto {
   joursRepos?: number[] | string;
 }
 
-// B. Représente l'objet JSON racine reçu { "planning": [ ... ] }
+
 export class CreatePlanningDto {
   @ApiProperty({
     type: [CreatePlanningItemDto],

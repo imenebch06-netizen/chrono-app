@@ -29,7 +29,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorator/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
-import { CurrentUser } from '../auth/decorator/current-user.decorator'; // Ajuste le chemin au besoin
+import { CurrentUser } from '../auth/decorator/current-user.decorator'; 
 @ApiTags('Demandes d\'Absence')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -37,10 +37,7 @@ import { CurrentUser } from '../auth/decorator/current-user.decorator'; // Ajust
 export class DemandeAbsenceController {
   constructor(private readonly demandeAbsenceService: DemandeAbsenceService) {}
 
-  // =========================================================================
-  // 1. CRÉATION & ESPACE PERSONNEL
-  // =========================================================================
-
+  
   @Post()
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
@@ -70,6 +67,19 @@ export class DemandeAbsenceController {
     return this.demandeAbsenceService.findByEmploye(userId);
   }
 
+  @Get('demandes-valides/team')
+  @Roles('MANAGER')
+  @ApiOperation({
+    summary: 'Obtenir les demandes validées de son équipe (Manager)',
+    description: 'Retourne toutes les demandes VALIDE des employés appartenant à la branche hiérarchique du Manager.',
+  })
+  @ApiResponse({ status: 200, description: 'Liste des demandes validées pour le manager.' })
+  @ApiResponse({ status: 403, description: 'Accès réservé aux responsables d\'organisation.' })
+  async getValidatedForMyTeam(@CurrentUser() user: any) {
+    const userId = Number(user.id ?? user.sub);
+    return this.demandeAbsenceService.findAllApprovedTeam(userId);
+  }
+
   @Delete('mes-demandes/:id/annuler')
   @ApiOperation({
     summary: 'Annuler sa propre demande d\'absence',
@@ -87,10 +97,7 @@ export class DemandeAbsenceController {
     return this.demandeAbsenceService.cancelOwnDemande(id, userId);
   }
 
-  // =========================================================================
-  // 2. WORKFLOW VALIDATION MANAGER & ADMIN
-  // =========================================================================
-
+  
   @Get('en-attente/mon-equipe')
   @Roles('MANAGER')
   @ApiOperation({
@@ -133,10 +140,7 @@ export class DemandeAbsenceController {
     return this.demandeAbsenceService.updateStatus(id, dto, user);
   }
 
-  // =========================================================================
-  // 3. CONSULTATION DÉTAILLÉE & ADMINISTRATION GLOBALE
-  // =========================================================================
-
+ 
   @Get()
   @Roles(Role.ADMIN)
   @ApiOperation({

@@ -9,6 +9,7 @@ import {
   UseGuards,
   Req,
   Res,
+  Query
 } from '@nestjs/common';
 import express from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
@@ -17,14 +18,14 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
-@ApiTags('Authentification') // Regroupe toutes ces routes sous l'onglet "Authentification" dans Swagger
+@ApiTags('Authentification')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
-  // Limitation du nombre de requêtes pour éviter les abus (5 requêtes par minute - par éxemple)
 
-  // Route pour l'inscription d'un nouvel utilisateur
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Inscription d’un nouvel utilisateur' })
@@ -35,7 +36,6 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
-  // Route pour la connexion d'un utilisateur existant
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Connexion utilisateur et récupération du token' })
@@ -44,11 +44,10 @@ export class AuthController {
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
-  // Route protégée pour obtenir le profil de l'utilisateur connecté: ceci necessite un token JWT valide dans l'en-tête Authorization(et on remarquera qu'on doit d'abord récupérer le token via swagger UI ou via la route /login)
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   @HttpCode(HttpStatus.OK)
-  @ApiBearerAuth() // Affiche le petit cadenas dans Swagger UI pour insérer le jeton JWT
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Obtenir le profil de l’utilisateur connecté' })
   @ApiResponse({ status: 200, description: 'Profil récupéré avec succès.' })
   @ApiResponse({ status: 401, description: 'Non autorisé (Token manquant ou invalide).' })
@@ -58,5 +57,32 @@ export class AuthController {
       user: req.user,
     };
   }
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Demande de réinitialisation de mot de passe' })
+  @ApiResponse({ status: 200, description: 'Lien/Token généré avec succès.' })
+  @ApiResponse({ status: 404, description: 'Aucun compte associé à cet email.' })
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(forgotPasswordDto.email);
+  }
 
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Réinitialisation du mot de passe avec le token JWT' })
+  @ApiResponse({ status: 200, description: 'Mot de passe modifié avec succès.' })
+  @ApiResponse({ status: 401, description: 'Token invalide ou expiré.' })
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return this.authService.resetPassword(resetPasswordDto);
+  }
+
+
+  @Get('verify-reset-token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Vérifier la validité du token de réinitialisation' })
+  @ApiResponse({ status: 200, description: 'Token valide.' })
+  @ApiResponse({ status: 401, description: 'Token invalide ou expiré.' })
+  async verifyResetToken(@Query('token') token: string) {
+    return this.authService.verifyResetToken(token);
+  }
 }
+

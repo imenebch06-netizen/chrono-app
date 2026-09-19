@@ -3,10 +3,11 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service'; // Ajuste le chemin selon ton projet
-
+import { PrismaService } from '../prisma/prisma.service';
+import { UpdateOrganizationDto } from './dto/update-organization.dto';
 type CreateOrganizationDto = {
   nom: string;
+  nom_en?: string;
   typeOrganizationId: number;
   idOrganizationSup?: number | null;
   managerId?: number | null;
@@ -16,23 +17,14 @@ type AssignManagerDto = {
   managerId?: number | null;
 };
 
-type UpdateOrganizationDto = {
-  nom?: string;
-  typeOrganizationId?: number;
-  idOrganizationSup?: number | null;
-};
 
 @Injectable()
 export class OrganizationService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // =========================================================================
-  // 1. CRÉATION D'UNE ORGANISATION
-  // =========================================================================
   async create(dto: CreateOrganizationDto) {
     let parentPath = '';
 
-    // A. Contrôle du Parent
     if (dto.idOrganizationSup) {
       const parent = await this.prisma.organization.findUnique({
         where: { id: dto.idOrganizationSup },
@@ -45,27 +37,24 @@ export class OrganizationService {
       parentPath = parent.path ?? '';
     }
 
-    // B. Validation du Manager si fourni à la création
     if (dto.managerId) {
       await this.validateManagerAvailability(dto.managerId);
     }
 
-    // C. Création initiale pour obtenir l'ID
     const newOrg = await this.prisma.organization.create({
       data: {
         nom: dto.nom,
+        nom_en: dto.nom_en ?? null,
         typeOrganizationId: dto.typeOrganizationId,
         idOrganizationSup: dto.idOrganizationSup ?? null,
         managerId: dto.managerId ?? null,
       },
     });
 
-    // D. Calcul automatique du PATH
     const calculatedPath = parentPath
       ? `${parentPath}/${newOrg.id}`
       : `${newOrg.id}`;
 
-    // E. Sauvegarde du path et retour du résultat
     return this.prisma.organization.update({
       where: { id: newOrg.id },
       data: { path: calculatedPath },
@@ -79,10 +68,7 @@ export class OrganizationService {
     });
   }
 
-  // =========================================================================
-  // 2. GESTION DU MANAGER (AFFECTER / RETIRER)
-  // =========================================================================
-  async assignManager(orgId: number, dto: AssignManagerDto) {
+    async assignManager(orgId: number, dto: AssignManagerDto) {
     const org = await this.prisma.organization.findUnique({
       where: { id: orgId },
     });
@@ -91,7 +77,6 @@ export class OrganizationService {
       throw new NotFoundException(`L'organisation #${orgId} est introuvable.`);
     }
 
-    // --- CAS A : Retirer le manager (managerId = null) ---
     if (!dto.managerId) {
       return this.prisma.organization.update({
         where: { id: orgId },
@@ -103,8 +88,6 @@ export class OrganizationService {
       });
     }
 
-    // --- CAS B : Affecter un nouveau manager ---
-    // 1. Vérifier si l'employé existe et récupérer son organisation rattachée
     const employe = await this.prisma.employe.findUnique({
       where: { id: dto.managerId },
       include: { organization: { select: { id: true, path: true } } } as any,
@@ -116,11 +99,10 @@ export class OrganizationService {
       );
     }
 
-    // 2. Règle d'unicité : Vérifier s'il est DÉJÀ manager d'une autre organisation
     const existingManagedOrg = await this.prisma.organization.findFirst({
       where: {
         managerId: dto.managerId,
-        NOT: { id: orgId }, // Exclure l'organisation actuelle
+        NOT: { id: orgId },
       },
     });
 
@@ -130,8 +112,6 @@ export class OrganizationService {
       );
     }
 
-    // 3. Règle de branche : L'employé doit appartenir à cette organisation ou sa descendance
-    // Normaliser le résultat : prisma peut renvoyer soit un objet soit un tableau
     const employeOrg = Array.isArray(employe.organization)
       ? employe.organization[0]
       : (employe.organization as any);
@@ -148,7 +128,6 @@ export class OrganizationService {
       );
     }
 
-    // 4. Affectation (L'employé conserve son organizationId d'origine)
     return this.prisma.organization.update({
       where: { id: orgId },
       data: { managerId: dto.managerId },
@@ -161,10 +140,7 @@ export class OrganizationService {
     });
   }
 
-  // =========================================================================
-  // 3. RECHERCHE ET DESCENDANCE (RECHERCHE RÉCURSIVE VIA PATH)
-  // =========================================================================
-  async getSubOrganizations(orgId: number) {
+    async getSubOrganizations(orgId: number) {
     const org = await this.prisma.organization.findUnique({
       where: { id: orgId },
     });
@@ -173,11 +149,10 @@ export class OrganizationService {
       throw new NotFoundException(`L'organisation #${orgId} est introuvable.`);
     }
 
-    // Récupération instantanée de toute la sous-arborescence en 1 requête SQL
     return this.prisma.organization.findMany({
       where: {
         path: {
-          startsWith: org.path, // Ex: Récupère "1/2", "1/2/3", "1/2/3/4"
+          startsWith: org.path,
         },
       },
       include: {
@@ -189,109 +164,105 @@ export class OrganizationService {
     });
   }
 
-  // =========================================================================
-  // 4. MODIFICATION ET DÉPLACEMENT
-  // =========================================================================
-  async update(id: number, dto: UpdateOrganizationDto) {
-    const currentOrg = await this.prisma.organization.findUnique({
-      where: { id },
-    });
+  async update(id: number | string, dto: UpdateOrganizationDto) {
+  const numericId = Number(id);
 
-    if (!currentOrg || !currentOrg.path) {
-      throw new NotFoundException(`L'organisation #${id} est introuvable.`);
+  if (isNaN(numericId)) {
+    throw new BadRequestException("L'ID d'organisation fourni est invalide.");
+  }
+
+  const currentOrg = await this.prisma.organization.findUnique({
+    where: { id: numericId },
+  });
+
+  if (!currentOrg || !currentOrg.path) {
+    throw new NotFoundException(`L'organisation #${numericId} est introuvable.`);
+  }
+
+  const isParentChanging =
+    dto.idOrganizationSup !== undefined &&
+    dto.idOrganizationSup !== currentOrg.idOrganizationSup;
+
+  if (!isParentChanging) {
+    const dataToUpdate: any = {};
+    if (dto.nom !== undefined) dataToUpdate.nom = dto.nom;
+    if (dto.nom_en !== undefined) dataToUpdate.nom_en = dto.nom_en;
+    if (dto.typeOrganizationId !== undefined && !isNaN(Number(dto.typeOrganizationId))) {
+      dataToUpdate.typeOrganizationId = Number(dto.typeOrganizationId);
     }
 
-    const isParentChanging =
-      dto.idOrganizationSup !== undefined &&
-      dto.idOrganizationSup !== currentOrg.idOrganizationSup;
-
-    // --- MODIFICATION SIMPLE (Pas de changement de parent) ---
-    if (!isParentChanging) {
-      return this.prisma.organization.update({
-        where: { id },
-        data: {
-          nom: dto.nom,
-          typeOrganizationId: dto.typeOrganizationId,
-        },
-        include: { typeOrganization: true, parent: true, manager: true },
-      });
-    }
-
-    // --- DÉPLACEMENT D'ARBRE (Changement de parent) ---
-    let newPath = `${id}`;
-
-    if (dto.idOrganizationSup !== null) {
-      if (dto.idOrganizationSup === id) {
-        throw new BadRequestException(
-          `Une organisation ne peut pas être son propre parent.`,
-        );
-      }
-
-      const newParent = await this.prisma.organization.findUnique({
-        where: { id: dto.idOrganizationSup },
-      });
-
-      if (!newParent || !newParent.path) {
-        throw new NotFoundException(
-          `Le nouveau parent #${dto.idOrganizationSup} n'existe pas.`,
-        );
-      }
-
-      // Protection contre la dépendance circulaire
-      if (newParent.path.startsWith(currentOrg.path)) {
-        throw new BadRequestException(
-          `Déplacement impossible : la cible est un sous-service de l'organisation actuelle.`,
-        );
-      }
-
-      newPath = `${newParent.path}/${id}`;
-    }
-
-    const oldPath = currentOrg.path;
-
-    // Transaction pour mettre à jour le nœud et toute sa descendance
-    return this.prisma.$transaction(async (tx) => {
-      const txClient = tx as typeof this.prisma;
-
-      // 1. Récupérer les sous-services enfants
-      const descendants = await txClient.organization.findMany({
-        where: {
-          path: {
-            startsWith: `${oldPath}/`,
-          },
-        },
-      });
-
-      // 2. Mettre à jour l'organisation déplacée
-      const updatedOrg = await txClient.organization.update({
-        where: { id },
-        data: {
-          nom: dto.nom,
-          typeOrganizationId: dto.typeOrganizationId,
-          idOrganizationSup: dto.idOrganizationSup ?? null,
-          path: newPath,
-        },
-        include: { typeOrganization: true, parent: true, manager: true },
-      });
-
-      // 3. Mettre à jour en cascade les paths de toute la descendance
-      for (const child of descendants) {
-        if (child.path) {
-          const childNewPath = child.path.replace(oldPath, newPath);
-          await txClient.organization.update({
-            where: { id: child.id },
-            data: { path: childNewPath },
-          });
-        }
-      }
-
-      return updatedOrg;
+    return this.prisma.organization.update({
+      where: { id: numericId },
+      data: dataToUpdate,
+      include: { typeOrganization: true, parent: true, manager: true },
     });
   }
 
-  // =========================================================================
-  // 5. SUPPRESSION SÉCURISÉE
-  // =========================================================================
+  let newPath = `${numericId}`;
+
+  if (dto.idOrganizationSup !== null && dto.idOrganizationSup !== undefined) {
+    const targetParentId = Number(dto.idOrganizationSup);
+
+    if (targetParentId === numericId) {
+      throw new BadRequestException(`Une organisation ne peut pas être son propre parent.`);
+    }
+
+    const newParent = await this.prisma.organization.findUnique({
+      where: { id: targetParentId },
+    });
+
+    if (!newParent || !newParent.path) {
+      throw new NotFoundException(`Le nouveau parent #${targetParentId} n'existe pas.`);
+    }
+
+    if (newParent.path.startsWith(currentOrg.path)) {
+      throw new BadRequestException(`Déplacement impossible : la cible est un sous-service de l'organisation actuelle.`);
+    }
+
+    newPath = `${newParent.path}/${numericId}`;
+  }
+
+  const oldPath = currentOrg.path;
+
+  return this.prisma.$transaction(async (tx) => {
+    const txClient = tx as typeof this.prisma;
+
+    const descendants = await txClient.organization.findMany({
+      where: {
+        path: { startsWith: `${oldPath}/` },
+      },
+    });
+
+    const dataToUpdate: any = {
+      path: newPath,
+      idOrganizationSup: dto.idOrganizationSup ? Number(dto.idOrganizationSup) : null,
+    };
+    if (dto.nom !== undefined) dataToUpdate.nom = dto.nom;
+    if (dto.nom_en !== undefined) dataToUpdate.nom_en = dto.nom_en;
+    if (dto.typeOrganizationId !== undefined && !isNaN(Number(dto.typeOrganizationId))) {
+      dataToUpdate.typeOrganizationId = Number(dto.typeOrganizationId);
+    }
+
+    const updatedOrg = await txClient.organization.update({
+      where: { id: numericId },
+      data: dataToUpdate,
+      include: { typeOrganization: true, parent: true, manager: true },
+    });
+
+    for (const child of descendants) {
+      if (child.path) {
+        const childNewPath = child.path.replace(oldPath, newPath);
+        await txClient.organization.update({
+          where: { id: child.id },
+          data: { path: childNewPath },
+        });
+      }
+    }
+
+    return updatedOrg;
+  });
+}
+
   async delete(id: number) {
     const org = await this.prisma.organization.findUnique({
       where: { id },
@@ -302,57 +273,45 @@ export class OrganizationService {
       throw new NotFoundException(`L'organisation #${id} est introuvable.`);
     }
 
-    // Protection des enfants : Bloquer si des sous-services existent
     if (org.children && org.children.length > 0) {
       throw new BadRequestException(
         `Impossible de supprimer cette organisation car elle contient encore ${org.children.length} sous-organisation(s). Veuillez d'abord les déplacer ou les supprimer.`,
       );
     }
 
-    // La suppression détache automatiquement les employés rattachés (SetNull configuré sur Prisma)
     return this.prisma.organization.delete({
       where: { id },
     });
   }
 
-  // =========================================================================
-// 6. OBTENIR L'ARBRE HIÉRARCHIQUE COMPLET POUR LE SIDEBAR
-// =========================================================================
-async getTree() {
-  // A. Récupération de toutes les organisations avec le nombre de membres
+ async getTree() {
   const orgs = await this.prisma.organization.findMany({
     include: {
       typeOrganization: true,
       manager: { select: { id: true, nom: true, prenom: true } },
-      _count: { select: { membres: true } }, // 📊 Effectif direct rattaché
+      _count: { select: { membres: true } },
     },
     orderBy: { path: 'asc' },
   });
 
-  // B. Construction ultra-rapide de l'arbre en mémoire
   const orgMap = new Map<number, any>();
   const tree: any[] = [];
 
-  // Étape 1: Indexation dans une Map
   orgs.forEach((org) => {
     orgMap.set(org.id, { ...org, children: [], isExpanded: true });
   });
 
-  // Étape 2: Imbrication Parent -> Enfants
   orgMap.forEach((org) => {
     if (org.idOrganizationSup && orgMap.has(org.idOrganizationSup)) {
       orgMap.get(org.idOrganizationSup).children.push(org);
     } else {
-      tree.push(org); // Nœud racine (DG ou top-level)
+      tree.push(org);
     }
   });
 
   return tree;
 }
 
-  // =========================================================================
-  // LECTURES ANNEXES
-  // =========================================================================
   async findAll() {
     return this.prisma.organization.findMany({
       include: {
@@ -367,7 +326,7 @@ async getTree() {
  async findAllTypes() {
   return this.prisma.typeOrganization.findMany({
     orderBy: {
-      id: 'asc', // Trie simplement par ordre (1, 2, 3, 4)
+      id: 'asc', 
     },
   });
 }

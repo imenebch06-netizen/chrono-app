@@ -1,35 +1,30 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { EmployeService } from '../employe/employe.service';
-import { PrismaService } from '../prisma/prisma.service'; // Injected pour vérifier rapidement le managerId
+import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly employeService: EmployeService,
     private readonly jwtService: JwtService,
-    private readonly prisma: PrismaService, // 🔑 Injection de Prisma pour tester l'organisation gérée
+    private readonly prisma: PrismaService,
   ) {}
 
-  // =========================================================================
-  // REGISTER
-  // =========================================================================
   async register(registerDto: RegisterDto) {
     const existingEmploye = await this.employeService.findByEmail(registerDto.email);
     if (existingEmploye) {
       throw new ConflictException('Cet email est déjà utilisé');
     }
 
-    // Création de l'utilisateur via le DTO
     const employe = await this.employeService.create(registerDto);
 
-    // Vérification du statut Manager (généralement false à l'inscription)
     const isManager = await this.checkIfManager(employe.id);
 
-    // Génération du token enrichi
     const token = this.generateToken(employe.id, employe.email, employe.role, isManager);
 
     return {
@@ -38,9 +33,6 @@ export class AuthService {
     };
   }
 
-  // =========================================================================
-  // LOGIN
-  // =========================================================================
   async login(loginDto: LoginDto) {
     const employe = await this.employeService.findByEmail(loginDto.email);
     if (!employe) {
@@ -52,13 +44,10 @@ export class AuthService {
       throw new UnauthorizedException('Email ou mot de passe incorrect');
     }
 
-    // 🔑 Vérification si cet employé est le responsable d'au moins une organisation
     const isManager = await this.checkIfManager(employe.id);
 
-    // 🔑 Génération du token contenant role et isManager
     const token = this.generateToken(employe.id, employe.email, employe.role, isManager);
 
-    // Suppression du mot de passe de la réponse
     const { password, ...employeWithoutPassword } = employe;
 
     return {
@@ -67,13 +56,7 @@ export class AuthService {
     };
   }
 
-  // =========================================================================
-  // HELPER METHODS
-  // =========================================================================
 
-  /**
-   * Vérifie si un employé est désigné comme managerId dans une organisation
-   */
   private async checkIfManager(employeId: number): Promise<boolean> {
     const managedOrg = await this.prisma.organization.findFirst({
       where: { managerId: employeId },
@@ -81,9 +64,6 @@ export class AuthService {
     return !!managedOrg;
   }
 
-  /**
-   * Génère le token JWT complet avec rôle et statut manager
-   */
   private generateToken(userId: number, email: string, role: string, isManager: boolean): string {
     const payload = {
       sub: userId,
@@ -93,4 +73,57 @@ export class AuthService {
     };
     return this.jwtService.sign(payload);
   }
+
+async forgotPassword(email: string): Promise<{ resetToken: string }> {
+  const employe = await this.employeService.findByEmail(email);
+  if (!employe) {
+    throw new NotFoundException('Aucun compte associé à cet email');
+  }
+
+  const resetToken = this.jwtService.sign(
+    { sub: employe.id, email: employe.email, purpose: 'RESET_PASSWORD' },
+    { expiresIn: '15m' },
+  );
+
+  console.log(`Token de réinitialisation pour ${email}: ${resetToken}`);
+
+  return { resetToken };
+}
+
+async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{ message: string }> {
+  const { token, newPassword } = resetPasswordDto;
+
+  try {
+    const payload = this.jwtService.verify(token);
+
+    if (payload.purpose !== 'RESET_PASSWORD') {
+      throw new UnauthorizedException('Token invalide');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await this.prisma.employe.update({
+      where: { id: payload.sub },
+      data: { password: hashedPassword },
+    });
+
+    return { message: 'Mot de passe réinitialisé avec succès' };
+  } catch (error) {
+    throw new UnauthorizedException('Token expiré ou invalide');
+  }
+}
+
+async verifyResetToken(token: string): Promise<{ valid: boolean }> {
+  try {
+    const payload = this.jwtService.verify(token);
+
+    if (payload.purpose !== 'RESET_PASSWORD') {
+      throw new UnauthorizedException('Token invalide');
+    }
+
+    return { valid: true };
+  } catch (error) {
+    throw new UnauthorizedException('Token expiré ou invalide');
+  }
+}
 }

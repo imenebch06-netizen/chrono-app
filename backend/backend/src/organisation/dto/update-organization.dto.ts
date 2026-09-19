@@ -10,6 +10,10 @@ export class UpdateOrganizationDto {
   @IsString()
   nom?: string;
 
+  @IsOptional()
+  @IsString()
+  nom_en?: string | null;
+
   @ApiPropertyOptional({
     description: "Nouvel ID du type/catégorie d'organisation",
     example: 2,

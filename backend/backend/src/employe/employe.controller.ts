@@ -1,5 +1,5 @@
 
-import { Body,Delete, Controller, Get,Patch, Param, ParseIntPipe, Post, Req, UploadedFile, UseGuards, UseInterceptors} from '@nestjs/common';
+import { Body,Delete, Controller, Get,Patch, Param, ParseIntPipe, Post, Req, UploadedFile, UseGuards, UseInterceptors, BadRequestException} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiConsumes } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { EmployeService } from './employe.service';
@@ -17,15 +17,23 @@ export class EmployeController {
     private readonly employeService: EmployeService
   ) {}
 
- // =========================================================================
-  // 👤 1. ESPACE PERSONNEL (Accessible par TOUT utilisateur connecté)
-  // =========================================================================
 
-  @Get('me')
-  @ApiOperation({ summary: 'Récupérer son propre profil (Espace Perso)' })
-  async getMyProfile(@CurrentUser() user: any) {
-    return this.employeService.findOne(user.id);
+ @Get('me')
+@ApiOperation({ summary: 'Récupérer son propre profil (Espace Perso)' })
+async getMyProfile(@CurrentUser() user: any) {
+  console.log('👉 Utilisateur extrait du Token JWT :', user);
+
+  const rawId = user?.id ?? user?.sub ?? user?.userId;
+  const userId = Number(rawId);
+
+  if (!rawId || isNaN(userId)) {
+    throw new BadRequestException(
+      `Impossible de lire l'ID utilisateur dans le jeton JWT. Contenu reçu : ${JSON.stringify(user)}`
+    );
   }
+
+  return this.employeService.findOne(userId);
+}
 
   @Patch('me')
   @ApiOperation({ summary: 'Modifier ses propres infos (mot de passe, adresse...)' })
@@ -36,21 +44,14 @@ export class EmployeController {
     return this.employeService.update(user.id, updateEmployeDto);
   }
 
-  // =========================================================================
-  // 👔 2. ESPACE MANAGER (Accessible par MANAGER et ADMIN)
-  // =========================================================================
 
   @Get('mon-equipe')
   @Roles('MANAGER')
   @ApiOperation({ summary: 'Récupérer les employés sous la responsabilité du manager' })
   async getMyTeam(@CurrentUser() user: any) {
-    // On passe l'ID du manager connecté
     return this.employeService.findSubordinatesByManager(user.id);
   }
 
-  // =========================================================================
-  // 🛡️ 3. ESPACE ADMIN / GESTION GLOBALE (Accessible par ADMIN seul)
-  // =========================================================================
 
   @Post()
   @Roles(Role.ADMIN)

@@ -45,7 +45,8 @@ model TypeOrganization {
 model Organization {
   id                  Int               @id @default(autoincrement())
   nom                 String
-  
+  nom_en              String?
+
   // 🔑 Chemin matérialisé pour la recherche récursive ultra-rapide sous MySQL (Ex: "1/2/5")
   path                String?
 
@@ -82,6 +83,9 @@ model Employe {
   email               String            @unique
   password            String
   adress              String?
+  adress_en           String?
+  latitude            Float?
+  longitude           Float?
   role                Role              @default(EMPLOYE)
 
   // Rattachement à une organisation (DG, Direction, Dept ou Service)
@@ -96,7 +100,7 @@ model Employe {
   plannings           Planning[]
   pointages           Pointage[]
   demandesAbsence     DemandeAbsence[]
-  notifications       Notification[] // 👈 NOUVELLE RELATION
+  notifications       Notification[]
   
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
@@ -143,7 +147,7 @@ model Planning {
   dateFin         DateTime
   heureDebut      String?  // Ex: "08:00"
   heureFin        String?  // Ex: "16:00"
-  type_travail    String   // "NORMAL", "SHIFT_3X8", "FLEXIBLE", "REPOS"
+  type_travail    String   // "NORMAL", "SHIFT_3X8", "FLEXIBLE","WEEKEND_FERIE", "CONTINGENCE",
   typeShift       String?  // "MATIN", "SOIR", "NUIT"
   demandes  DemandeAbsence[] // Relation inverse
   plageFixeDebut String?
@@ -163,6 +167,7 @@ model Pointage {
   heureFin    DateTime?
   dureeHeures Float?
   creditDebit Float?
+  estAbsenceAutomatique Boolean @default(false)
 
   employeId   Int
   employe     Employe   @relation(fields: [employeId], references: [id], onDelete: Cascade)

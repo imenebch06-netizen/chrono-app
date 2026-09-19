@@ -5,7 +5,7 @@ import { Readable } from 'stream';
 @Injectable()
 export class UploadService {
   constructor() {
-    // Configuration de Cloudinary via les variables d'environnement (.env)
+    
     cloudinary.config({
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
       api_key: process.env.CLOUDINARY_API_KEY,
@@ -17,7 +17,7 @@ export class UploadService {
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
-          folder: 'gestion-du-temps', // Dossier de destination dans Cloudinary
+          folder: 'gestion-du-temps', 
         },
         (error, result) => {
           if (error) {
@@ -30,7 +30,7 @@ export class UploadService {
         },
       );
 
-      // Conversion du buffer mémoire de l'image en flux (stream)
+     
       Readable.from(file.buffer).pipe(uploadStream);
     });
   }
