@@ -10,7 +10,7 @@
         <!-- En-tête : Nom & Badge Type -->
         <div class="card-header">
           <div class="title-group">
-            <h4 class="org-title" [title]="node.nom">{{ node.nom }}</h4>
+            <h4 class="org-title" [title]="getOrgName(node)">{{ getOrgName(node) }}</h4>
             <span *ngIf="node.typeOrganization?.code" 
                   class="type-badge" 
                   [ngClass]="getBadgeClass(node.typeOrganization?.code)">
@@ -30,12 +30,16 @@
             <span *ngIf="node.manager" class="manager-name">
               {{ node.manager.prenom }} {{ node.manager.nom }}
             </span>
-            <span *ngIf="!node.manager" class="vacant-tag">Vacant</span>
+            <span *ngIf="!node.manager" class="vacant-tag">
+              {{ 'ORG_TREE.VACANT' | translate }}
+            </span>
           </div>
 
           <div class="info-pill effectif-pill">
             <mat-icon class="pill-icon text-indigo">group</mat-icon>
-            <span class="effectif-count">{{ getTotalEffectif(node) }} pers.</span>
+            <span class="effectif-count">
+              {{ getTotalEffectif(node) }} {{ 'ORG_TREE.PERSONS_SHORT' | translate }}
+            </span>
           </div>
         </div>
 
@@ -58,7 +62,8 @@
         <!-- En-tête : Nom & Badge Type -->
         <div class="card-header">
           <div class="title-group">
-            <h4 class="org-title" [title]="node.nom">{{ node.nom }}</h4>
+            <!-- 🟢 CORRECTION ICI : Remplacement de node.nom par getOrgName(node) -->
+            <h4 class="org-title" [title]="getOrgName(node)">{{ getOrgName(node) }}</h4>
             <span *ngIf="node.typeOrganization?.code" 
                   class="type-badge" 
                   [ngClass]="getBadgeClass(node.typeOrganization?.code)">
@@ -74,12 +79,16 @@
             <span *ngIf="node.manager" class="manager-name">
               {{ node.manager.prenom }} {{ node.manager.nom }}
             </span>
-            <span *ngIf="!node.manager" class="vacant-tag">Vacant</span>
+            <span *ngIf="!node.manager" class="vacant-tag">
+              {{ 'ORG_TREE.VACANT' | translate }}
+            </span>
           </div>
 
           <div class="info-pill effectif-pill">
             <mat-icon class="pill-icon text-indigo">group</mat-icon>
-            <span class="effectif-count">{{ getTotalEffectif(node) }} pers.</span>
+            <span class="effectif-count">
+              {{ getTotalEffectif(node) }} {{ 'ORG_TREE.PERSONS_SHORT' | translate }}
+            </span>
           </div>
         </div>
 

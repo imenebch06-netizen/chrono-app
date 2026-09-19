@@ -10,8 +10,12 @@
           <i-tabler name="clock-hour-4" class="icon-24"></i-tabler>
         </div>
         <div>
-          <mat-card-title class="f-s-20 f-w-600 m-b-4 text-primary">Mon Planning</mat-card-title>
-          <span class="f-s-12 text-muted font-semibold">Horaires & Configuration de travail</span>
+          <mat-card-title class="f-s-20 f-w-600 m-b-4 text-primary">
+            {{ 'MY_SCHEDULE.TITLE' | translate }}
+          </mat-card-title>
+          <span class="f-s-12 text-muted font-semibold">
+            {{ 'MY_SCHEDULE.SUBTITLE' | translate }}
+          </span>
         </div>
       </div>
     </mat-card-header>
@@ -21,14 +25,18 @@
 
       <!-- 1. État de Chargement -->
       <div *ngIf="isLoading" class="text-center p-24 text-muted">
-        <span>Chargement du planning en cours...</span>
+        <span>{{ 'MY_SCHEDULE.LOADING' | translate }}</span>
       </div>
 
       <!-- 2. Aucun planning assigné -->
       <div *ngIf="!isLoading && !planningDisplay" class="p-24 bg-light rounded text-center">
         <i-tabler name="calendar-off" class="icon-32 text-muted mb-2"></i-tabler>
-        <p class="f-s-16 f-w-600 text-dark m-b-4">Aucun planning assigné</p>
-        <span class="f-s-12 text-muted">Votre manager ne vous a pas encore attribué de planning de travail.</span>
+        <p class="f-s-16 f-w-600 text-dark m-b-4">
+          {{ 'MY_SCHEDULE.NO_PLANNING_TITLE' | translate }}
+        </p>
+        <span class="f-s-12 text-muted">
+          {{ 'MY_SCHEDULE.NO_PLANNING_SUBTITLE' | translate }}
+        </span>
       </div>
 
       <!-- 3. Affichage du Planning dynamique -->
@@ -41,14 +49,16 @@
               <i-tabler name="clock" class="icon-20"></i-tabler>
             </div>
             <div>
-              <span class="f-s-12 text-muted d-block f-w-600">HORAIRES DU JOUR</span>
+              <span class="f-s-12 text-muted d-block f-w-600">
+                {{ 'MY_SCHEDULE.DAILY_HOURS' | translate }}
+              </span>
               <span class="f-s-16 f-w-600 text-dark">
                 {{ planningDisplay.heurDebut }} - {{ planningDisplay.heurFin }}
               </span>
             </div>
           </div>
           <span class="f-s-12 f-w-600 p-x-12 p-y-4 bg-light-primary text-primary rounded-pill">
-            Journée de travail
+            {{ 'MY_SCHEDULE.WORK_DAY' | translate }}
           </span>
         </div>
 
@@ -59,7 +69,9 @@
               <i-tabler name="briefcase" class="icon-20"></i-tabler>
             </div>
             <div>
-              <span class="f-s-12 text-muted d-block f-w-600">TYPE DE TRAVAIL</span>
+              <span class="f-s-12 text-muted d-block f-w-600">
+                {{ 'MY_SCHEDULE.WORK_TYPE' | translate }}
+              </span>
               <span class="f-s-16 f-w-600 text-dark">{{ planningDisplay.typeDeTravail }}</span>
             </div>
           </div>
@@ -75,14 +87,53 @@
               <i-tabler name="calendar-off" class="icon-20"></i-tabler>
             </div>
             <div>
-              <span class="f-s-12 text-muted d-block f-w-600">JOURS DE REPOS</span>
+              <span class="f-s-12 text-muted d-block f-w-600">
+                {{ 'MY_SCHEDULE.OFF_DAYS' | translate }}
+              </span>
               <span class="f-s-16 f-w-600 text-dark">{{ planningDisplay.joursDeRepos }}</span>
             </div>
           </div>
           <span class="f-s-12 f-w-600 p-x-12 p-y-4 bg-light-warning text-warning rounded-pill">
-            Repos hebdomadaire
+            {{ 'MY_SCHEDULE.WEEKLY_REST' | translate }}
           </span>
         </div>
+        <!-- État actuel -->
+<div class="p-16 bg-light rounded d-flex align-items-center justify-content-between w-100">
+  <div class="d-flex align-items-center gap-16">
+    <div class="rounded p-12 d-flex align-items-center justify-content-center"
+         [ngClass]="planningDisplay.etatCouleur">
+      <i-tabler [name]="planningDisplay.etatIcon" class="icon-20"></i-tabler>
+    </div>
+    <div>
+      <span class="f-s-12 text-muted d-block f-w-600">
+        {{ 'MY_SCHEDULE.CURRENT_STATUS' | translate }}
+      </span>
+      <span class="f-s-16 f-w-600 text-dark">
+        {{ planningDisplay.etatLibelleKey | translate }}
+      </span>
+    </div>
+  </div>
+  <span class="f-s-12 f-w-600 p-x-12 p-y-4 rounded-pill" [ngClass]="planningDisplay.etatCouleur">
+    {{ planningDisplay.etatLibelleKey | translate }}
+  </span>
+</div>
+
+<!-- Période du planning -->
+<div class="p-16 bg-light rounded d-flex align-items-center justify-content-between w-100">
+  <div class="d-flex align-items-center gap-16">
+    <div class="rounded bg-light-info text-info p-12 d-flex align-items-center justify-content-center">
+      <i-tabler name="calendar" class="icon-20"></i-tabler>
+    </div>
+    <div>
+      <span class="f-s-12 text-muted d-block f-w-600">
+        {{ 'MY_SCHEDULE.PERIOD' | translate }}
+      </span>
+      <span class="f-s-16 f-w-600 text-dark">
+        {{ planningDisplay.dateDebut }} → {{ planningDisplay.dateFin }}
+      </span>
+    </div>
+  </div>
+</div>
 
       </div>
 

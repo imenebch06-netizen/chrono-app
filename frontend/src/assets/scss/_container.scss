@@ -24,6 +24,40 @@ body {
   min-height: calc(100vh - 28px);
   width: 100%;
   margin-top: 4px;
+  background-color: var(--mat-sys-background) !important;
+  color: var(--mat-sys-on-background) !important;
+}
+
+/* Forcer le fond sombre du Sidebar et des conteneurs internes Material */
+.mat-drawer-container,
+.mat-drawer-content {
+  background-color: var(--mat-sys-background) !important;
+  color: var(--mat-sys-on-background) !important;
+}
+
+.sidebarNav,
+.mat-drawer {
+  background-color: var(--mat-sys-surface) !important;
+  color: var(--mat-sys-on-background) !important;
+
+  .mat-drawer-inner-container {
+    background-color: var(--mat-sys-surface) !important;
+  }
+}
+
+app-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background-color: inherit;
+}
+
+.body-wrapper {
+  border-radius: $border-radius;
+  background-color: var(--mat-sys-surface-container-lowest, $layout-bg);
+  margin-bottom: 24px;
+  min-height: calc(100% - 48px);
 }
 
 @media (max-width: 991px) {
@@ -39,9 +73,9 @@ body {
 }
 
 .body-wrapper {
-  border-radius: 20px;
+  border-radius: $border-radius;
   background-color: $layout-bg;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   min-height: calc(100% - 48px);
 }
 
@@ -78,12 +112,18 @@ body {
 }
 
 .pageWrapper {
-  padding: 16px;
+  padding: 24px;
   min-height: calc(100vh - 38px);
   margin: 0 auto;
 
   &.maxWidth {
     max-width: $boxedWidth;
+  }
+}
+
+@media (max-width: 767px) {
+  .pageWrapper {
+    padding: 16px;
   }
 }
 

@@ -2,20 +2,20 @@
 @use "@angular/material" as mat;
 @use "../variables" as *;
 
-@include mat.card-overrides((elevated-container-color: $white,
-    outlined-container-color: $white,
-    title-text-size: 1.125rem,
-    subtitle-text-size: 14px,
-    subtitle-text-color: var(--mat-sys-surface-container-low),
-    title-text-line-height: 1.6rem,
-    title-text-weight: 600,
-    subtitle-text-weight: 400,
-    elevated-container-shape: var(--mat-sys-corner-small),
-    outlined-container-shape: var(--mat-sys-corner-small),
-    elevated-container-elevation: var(--mat-sys-level1),
-  ));
+@include mat.card-overrides((
+  elevated-container-color: var(--mat-sys-surface),
+  outlined-container-color: var(--mat-sys-surface),
+  title-text-size: 1.125rem,
+  subtitle-text-size: 14px,
+  subtitle-text-color: var(--mat-sys-surface-container-low),
+  title-text-line-height: 1.6rem,
+  title-text-weight: 600,
+  subtitle-text-weight: 400,
+  elevated-container-shape: var(--mat-sys-corner-small),
+  outlined-container-shape: var(--mat-sys-corner-small),
+  elevated-container-elevation: var(--mat-sys-level1),
+));
 
-// styles
 html {
   .mat-mdc-card {
     margin-bottom: $card-spacer;
@@ -24,11 +24,11 @@ html {
       padding: 16px $card-spacer !important;
     }
 
-    .mat-mdc-card-header+.mat-mdc-card-content {
+    .mat-mdc-card-header + .mat-mdc-card-content {
       padding: 0 $card-spacer $card-spacer;
     }
 
-    >.mat-mdc-card-content {
+    > .mat-mdc-card-content {
       padding: $card-spacer !important;
     }
 
@@ -49,7 +49,7 @@ html {
   .cardBorder {
     .mdc-card {
       box-shadow: none !important;
-      border: 1px solid $borderColor !important;
+      border: 1px solid var(--mat-sys-outline) !important; // Adaptatif Dark/Light
 
       &.shadow-none {
         border: 0 !important;

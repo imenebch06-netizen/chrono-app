@@ -1,4 +1,15 @@
-/* Style de l'en-tête de section (navCap) */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background-color: inherit;
+}
+
+.sidebar-toggles-row {
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
 .nav-caption-header {
   user-select: none;
   cursor: pointer;
@@ -7,11 +18,11 @@
   transition: background-color 0.2s ease, color 0.2s ease;
 
   &:hover {
-    background-color: rgba(0, 0, 0, 0.04);
-    color: var(--mat-primary-color, #5d87ff);
+    background-color: color-mix(in srgb, var(--mat-sys-on-background) 6%, transparent);
+    color: var(--mat-sys-primary);
 
     .icon-section {
-      color: var(--mat-primary-color, #5d87ff);
+      color: var(--mat-sys-primary);
     }
   }
 
@@ -22,46 +33,31 @@
   }
 }
 
-/* Animation de la flèche de toggle */
 .toggle-arrow {
   transition: transform 0.25s ease-in-out;
-  color: #7c8ba1;
+  color: var(--mat-sys-on-background);
+  opacity: 0.6;
 
   &.rotated {
     transform: rotate(180deg);
   }
 }
 
-/* Conteneur des éléments enfants */
 .nav-children-container {
-  padding-left: 8px;
+  padding-inline-start: 8px;
   transition: all 0.3s ease;
 }
 
-/* Style de l'élément de menu actif */
-.menu-list-item.selected-active {
-  background-color: rgba(93, 135, 255, 0.1) !important;
-  color: #5d87ff !important;
-  font-weight: 600;
-
-  mat-icon {
-    color: #5d87ff !important;
-  }
-}
-
 .scroll-sidebar {
-  /* Calcule la hauteur totale moins le logo/header */
   height: calc(100vh - 80px) !important; 
-  /* Force l'apparition de la barre de défilement si le contenu dépasse */
   overflow-y: auto !important; 
 }
 
-/* Personnalisation optionnelle pour rendre la scrollbar fine et élégante */
 .scroll-sidebar::-webkit-scrollbar {
   width: 5px;
 }
 
 .scroll-sidebar::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.15);
+  background-color: var(--mat-sys-outline, rgba(150, 150, 150, 0.3));
   border-radius: 4px;
 }

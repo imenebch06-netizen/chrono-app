@@ -44,33 +44,40 @@ export class DemandeAbsenceService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/demandes-absence`;
 
-  // 1. Soumettre une demande (avec support de fichier)
+ 
   createDemande(formData: FormData): Observable<DemandeAbsence> {
     return this.http.post<DemandeAbsence>(this.apiUrl, formData);
   }
 
-  // 2. Récupérer mes demandes
+  
   getMesDemandes(): Observable<DemandeAbsence[]> {
     return this.http.get<DemandeAbsence[]>(`${this.apiUrl}/mes-demandes`);
   }
 
-  // 3. Annuler sa propre demande
+  
   annulerMaDemande(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/mes-demandes/${id}/annuler`);
   }
 
-  // 4. Récupérer les demandes en attente pour un Manager
+ 
   getPendingForMyTeam(): Observable<DemandeAbsence[]> {
     return this.http.get<DemandeAbsence[]>(`${this.apiUrl}/en-attente/mon-equipe`);
   }
 
-  // 5. Récupérer toutes les demandes en attente pour un Admin
+  getAllMyTeam(): Observable<DemandeAbsence[]> {
+    return this.http.get<DemandeAbsence[]>(`${this.apiUrl}/demandes-valides/team`);
+  }
+  
   getAllPending(): Observable<DemandeAbsence[]> {
     return this.http.get<DemandeAbsence[]>(`${this.apiUrl}/en-attente`);
   }
 
-  // 6. Valider ou Refuser une demande
+  
   updateStatus(id: number, status: StatutDemande): Observable<DemandeAbsence> {
     return this.http.patch<DemandeAbsence>(`${this.apiUrl}/${id}/statut`, { status });
+  }
+
+  getAllDemandes(): Observable<DemandeAbsence[]> {
+    return this.http.get<DemandeAbsence[]>(`${this.apiUrl}`);
   }
 }

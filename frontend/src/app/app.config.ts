@@ -16,7 +16,8 @@ import {
 } from '@angular/router';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideClientHydration } from '@angular/platform-browser';
-
+import { provideTranslateService } from '@ngx-translate/core';
+import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 // icons
 import { TablerIconsModule } from 'angular-tabler-icons';
 import * as TablerIcons from 'angular-tabler-icons/icons';
@@ -40,7 +41,7 @@ export const appConfig: ApplicationConfig = {
       }),
       withComponentInputBinding()
     ),
-    provideHttpClient(withInterceptors([authInterceptor])),// 🟢 Active l'injection automatique du Token
+    provideHttpClient(withInterceptors([authInterceptor])),
     provideClientHydration(),
     provideAnimationsAsync(),
     importProvidersFrom(
@@ -50,5 +51,11 @@ export const appConfig: ApplicationConfig = {
       TablerIconsModule.pick(TablerIcons),
       NgScrollbarModule,
     ),
+
+    provideTranslateService({
+  lang: 'fr',
+  fallbackLang: 'fr',
+  loader: provideTranslateHttpLoader({ prefix: '/assets/i18n/', suffix: '.json' }),
+}),
   ],
 };

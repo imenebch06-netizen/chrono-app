@@ -19,7 +19,12 @@ import { CommonModule } from '@angular/common';
   selector: 'app-nav-item',
   imports: [TranslateModule, TablerIconsModule, MaterialModule, CommonModule],
   templateUrl: './nav-item.component.html',
-  styleUrls: [],
+  styles: [`
+    :host {
+  display: block;
+
+}
+  `],
 })
 export class AppNavItemComponent implements OnChanges {
   @Output() notify: EventEmitter<boolean> = new EventEmitter<boolean>();

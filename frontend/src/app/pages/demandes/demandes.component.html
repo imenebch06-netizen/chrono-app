@@ -1,167 +1,157 @@
-<div class="container-fluid p-24">
-  <!-- En-tête -->
-  <div class="row m-b-24">
-    <div class="col-12">
-      <h2 class="f-s-24 f-w-600 m-b-4">Demandes d'Absence & Congés</h2>
-      <p class="text-muted f-s-14 m-b-0">
-        Soumettez vos demandes et suivez leur état de validation.
+<div class="p-4 sm:p-6 lg:p-8 space-y-6">
+  <!-- En-tête de la page -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[var(--mat-sys-surface)] p-6 rounded-2xl border border-[var(--mat-sys-outline)] shadow-sm">
+    <div>
+      <h1 class="text-xl sm:text-2xl font-extrabold text-[var(--mat-sys-on-background)] tracking-tight">
+        {{ 'DEMANDES.TITLE' | translate }}
+      </h1>
+      <p class="text-xs sm:text-sm text-[var(--mat-sys-on-background)]/60 mt-0.5">
+        {{ 'DEMANDES.SUBTITLE' | translate }}
       </p>
     </div>
   </div>
 
   <mat-tab-group animationDuration="0ms">
     
-    <!-- ========================================== -->
-    <!-- ONGLET 1 : MES DEMANDES (Formulaire + Liste) -->
-    <!-- ========================================== -->
-    <mat-tab label="Mes Demandes">
-      <div class="row m-t-24">
+    <!-- ONGLET 1 : MES DEMANDES -->
+    <mat-tab [label]="'DEMANDES.TABS.MY_REQUESTS' | translate">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6">
         
         <!-- Formulaire de soumission -->
-        <div class="col-lg-5 col-md-12 m-b-24">
-          <mat-card class="cardWithShadow overflow-hidden h-100">
-            <mat-card-header class="p-24 bg-light-primary">
-              <mat-card-title class="f-s-18 f-w-600 text-primary">Nouvelle Demande</mat-card-title>
-            </mat-card-header>
+        <div class="lg:col-span-5">
+          <mat-card class="!bg-[var(--mat-sys-surface)] !rounded-2xl !border !border-[var(--mat-sys-outline)] !shadow-sm overflow-hidden h-full">
+            <div class="p-6 border-b border-[var(--mat-sys-outline)]">
+              <h2 class="text-base font-bold text-[var(--mat-sys-on-background)]">
+                {{ 'DEMANDES.FORM.NEW_REQUEST' | translate }}
+              </h2>
+            </div>
 
-            <mat-card-content class="p-24">
-              <form [formGroup]="demandeForm" (ngSubmit)="onSubmit()">
+            <mat-card-content class="!p-6">
+              <form [formGroup]="demandeForm" (ngSubmit)="onSubmit()" class="space-y-4">
                 
                 <!-- 1. Type de Demande -->
-                <div class="row m-b-16">
-                  <div class="col-12">
-                    <mat-form-field appearance="outline" class="w-100 d-block">
-                      <mat-label>Type de Demande</mat-label>
-                      <mat-select formControlName="typeDemande">
-                        @for (type of typesDemande; track type) {
-                          <mat-option [value]="type">{{ type }}</mat-option>
-                        }
-                      </mat-select>
-                    </mat-form-field>
-                  </div>
-                </div>
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-label>{{ 'DEMANDES.FORM.REQUEST_TYPE' | translate }}</mat-label>
+                  <mat-select formControlName="typeDemande">
+                    @for (type of typesDemande; track type) {
+                      <mat-option [value]="type">{{ 'DEMANDES.TYPES.' + type | translate }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
 
                 <!-- 2. Champ spécifique CONGÉ -->
                 @if (demandeForm.get('typeDemande')?.value === 'CONGE') {
-                  <div class="row m-b-16">
-                    <div class="col-12">
-                      <mat-form-field appearance="outline" class="w-100 d-block">
-                        <mat-label>Type de Congé</mat-label>
-                        <input matInput formControlName="type_conge" placeholder="ex: Congé Payé, Maladie, Sans Solde" />
-                      </mat-form-field>
-                    </div>
-                  </div>
+                  <mat-form-field appearance="outline" class="w-full">
+                    <mat-label>{{ 'DEMANDES.FORM.LEAVE_TYPE' | translate }}</mat-label>
+                    <input matInput formControlName="type_conge" [placeholder]="'DEMANDES.FORM.LEAVE_TYPE_PLACEHOLDER' | translate" />
+                  </mat-form-field>
                 }
 
                 <!-- 3. Champ spécifique RÉCUPÉRATION -->
                 @if (demandeForm.get('typeDemande')?.value === 'RECUPERATION') {
-                  <div class="row m-b-16">
-                    <div class="col-12">
-                      <mat-form-field appearance="outline" class="w-100 d-block">
-                        <mat-label>Heures à récupérer (Max 8h)</mat-label>
-                        <input matInput type="number" step="0.5" formControlName="heures_a_recuperer" placeholder="ex: 7.5" />
-                      </mat-form-field>
-                    </div>
-                  </div>
+                  <mat-form-field appearance="outline" class="w-full">
+                    <mat-label>{{ 'DEMANDES.FORM.HOURS_TO_RECOVER' | translate }}</mat-label>
+                    <input matInput type="number" step="0.5" formControlName="heures_a_recuperer" [placeholder]="'DEMANDES.FORM.HOURS_PLACEHOLDER' | translate" />
+                  </mat-form-field>
                 }
 
-               <!-- 4. Dates dynamique (Single Date pour Récupération / Range pour Congé et Absence) -->
+                <!-- 4. Dates dynamique -->
                 @if (demandeForm.get('typeDemande')?.value === 'RECUPERATION') {
-                  <div class="row m-b-16">
-                    <div class="col-12">
-                      <mat-form-field appearance="outline" class="w-100 d-block">
-                        <mat-label>Date de Récupération</mat-label>
-                        <input matInput type="date" formControlName="dateDebut" [min]="minDate" [max]="maxDate"/>
-                      </mat-form-field>
-                    </div>
-                  </div>
+                  <mat-form-field appearance="outline" class="w-full">
+                    <mat-label>{{ 'DEMANDES.FORM.RECOVERY_DATE' | translate }}</mat-label>
+                    <input matInput type="date" formControlName="dateDebut" [min]="minDate" [max]="maxDate"/>
+                  </mat-form-field>
                 } @else {
-                  <div class="row m-b-16">
-                    <div class="col-md-6 col-12 m-b-16 m-b-md-0">
-                      <mat-form-field appearance="outline" class="w-100 d-block">
-                        <mat-label>Date Début</mat-label>
-                        <input matInput type="date" formControlName="dateDebut" [min]="minDate" [max]="maxDate"/>
-                      </mat-form-field>
-                    </div>
-                    <div class="col-md-6 col-12">
-                      <mat-form-field appearance="outline" class="w-100 d-block">
-                        <mat-label>Date Fin</mat-label>
-                        <input matInput type="date" formControlName="dateFin" [min]="minDate" [max]="maxDate"/>
-                      </mat-form-field>
-                    </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <mat-form-field appearance="outline" class="w-full">
+                      <mat-label>{{ 'DEMANDES.FORM.START_DATE' | translate }}</mat-label>
+                      <input matInput type="date" formControlName="dateDebut" [min]="minDate" [max]="maxDate"/>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline" class="w-full">
+                      <mat-label>{{ 'DEMANDES.FORM.END_DATE' | translate }}</mat-label>
+                      <input matInput type="date" formControlName="dateFin" [min]="minDate" [max]="maxDate"/>
+                    </mat-form-field>
                   </div>
                 }
 
                 <!-- 5. Motif -->
-                <div class="row m-b-16">
-                  <div class="col-12">
-                    <mat-form-field appearance="outline" class="w-100 d-block">
-                      <mat-label>Motif</mat-label>
-                      <textarea matInput formControlName="motif" rows="3" placeholder="Raison de la demande..."></textarea>
-                    </mat-form-field>
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-label>{{ 'DEMANDES.FORM.REASON' | translate }}</mat-label>
+                  <textarea matInput formControlName="motif" rows="3" [placeholder]="'DEMANDES.FORM.REASON_PLACEHOLDER' | translate"></textarea>
+                </mat-form-field>
+
+                <!-- 6. Justificatif -->
+                <div class="space-y-1">
+                  <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--mat-sys-on-background)]/40 block">
+                    {{ 'DEMANDES.FORM.ATTACHMENT' | translate }}
+                  </label>
+                  <div class="p-3 bg-transparent border border-dashed border-[var(--mat-sys-outline)] rounded-xl text-center">
+                    <input type="file" (change)="onFileSelected($event)" class="text-xs text-[var(--mat-sys-on-background)] w-full" />
                   </div>
                 </div>
 
-                <!-- 6. Justificatif (Bouton d'import épuré) -->
-                <div class="row m-b-24">
-                  <div class="col-12">
-                    <label class="f-s-12 text-muted d-block f-w-600 m-b-8">JUSTIFICATIF (OPTIONNEL)</label>
-                    <div class="p-12 bg-light rounded border border-dashed text-center">
-                      <input type="file" (change)="onFileSelected($event)" class="form-control" />
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 7. Bouton d'envoi -->
-                <button mat-raised-button color="primary" type="submit" [disabled]="demandeForm.invalid || isSubmitting()" class="w-100 p-y-12 f-s-16">
-                  {{ isSubmitting() ? 'Envoi en cours...' : 'Soumettre la Demande' }}
+                <!-- Bouton de soumission -->
+                <button 
+                  type="submit" 
+                  [disabled]="demandeForm.invalid || isSubmitting()" 
+                  class="w-full py-3.5 px-4 rounded-xl text-sm font-bold bg-[var(--mat-sys-primary)] text-[var(--mat-sys-on-primary)] hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm">
+                  {{ (isSubmitting() ? 'DEMANDES.FORM.SUBMITTING' : 'DEMANDES.FORM.SUBMIT') | translate }}
                 </button>
-
               </form>
             </mat-card-content>
           </mat-card>
         </div>
 
         <!-- Liste des demandes personnelles -->
-        <div class="col-lg-7 col-md-12 m-b-24">
-          <mat-card class="cardWithShadow overflow-hidden h-100">
-            <mat-card-header class="p-24 bg-light">
-              <mat-card-title class="f-s-18 f-w-600">Historique de mes Demandes</mat-card-title>
-            </mat-card-header>
+        <div class="lg:col-span-7">
+          <mat-card class="!bg-[var(--mat-sys-surface)] !rounded-2xl !border !border-[var(--mat-sys-outline)] !shadow-sm overflow-hidden h-full">
+            <div class="p-6 border-b border-[var(--mat-sys-outline)]">
+              <h2 class="text-base font-bold text-[var(--mat-sys-on-background)]">
+                {{ 'DEMANDES.HISTORY.TITLE' | translate }}
+              </h2>
+            </div>
 
-            <mat-card-content class="p-24">
+            <mat-card-content class="!p-6 max-h-[620px] overflow-y-auto">
               @if (isLoading()) {
-                <div class="text-center p-24"><mat-spinner diameter="30"></mat-spinner></div>
+                <div class="flex justify-center p-8"><mat-spinner diameter="32"></mat-spinner></div>
               } @else if (mesDemandes().length === 0) {
-                <div class="p-48 bg-light rounded text-center m-t-16">
-                  <p class="f-s-16 f-w-600 text-dark m-b-4">Aucune demande soumise pour le moment</p>
-                  <span class="f-s-12 text-muted">Vos demandes apparaîtront ici après envoi.</span>
+                <div class="p-8 text-center bg-transparent border border-[var(--mat-sys-outline)] rounded-2xl">
+                  <p class="text-sm font-bold text-[var(--mat-sys-on-background)]">
+                    {{ 'DEMANDES.HISTORY.EMPTY_TITLE' | translate }}
+                  </p>
+                  <span class="text-xs text-[var(--mat-sys-on-background)]/50">
+                    {{ 'DEMANDES.HISTORY.EMPTY_SUBTITLE' | translate }}
+                  </span>
                 </div>
               } @else {
-                <div class="d-flex flex-column gap-12 m-t-16">
+                <div class="space-y-3">
                   @for (item of mesDemandes(); track item.id) {
-                    <div class="p-16 bg-light rounded d-flex align-items-center justify-content-between flex-wrap gap-12">
-                      <div>
-                        <div class="d-flex align-items-center gap-8 m-b-4">
-                          <strong class="f-s-14 text-dark">{{ item.typeDemande }}</strong>
-                          <span class="f-s-12 p-x-8 p-y-2 rounded-pill"
+                    <div class="p-4 bg-transparent border border-[var(--mat-sys-outline)] hover:border-[var(--mat-sys-primary)]/40 rounded-2xl transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div class="min-w-0 flex-1 space-y-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                          <strong class="text-xs sm:text-sm font-bold text-[var(--mat-sys-on-background)]">
+                            {{ 'DEMANDES.TYPES.' + item.typeDemande | translate }}
+                          </strong>
+                          <span class="px-3 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase border"
                                 [ngClass]="{
-                                  'bg-light-warning text-warning': item.status === statuts.EN_ATTENTE,
-                                  'bg-light-success text-success': item.status === statuts.VALIDE,
-                                  'bg-light-error text-error': item.status === statuts.REFUSE
+                                  'bg-amber-500/10 text-amber-500 border-amber-500/20': item.status === statuts.EN_ATTENTE,
+                                  'bg-emerald-500/10 text-emerald-500 border-emerald-500/20': item.status === statuts.VALIDE,
+                                  'bg-rose-500/10 text-rose-500 border-rose-500/20': item.status === statuts.REFUSE
                                 }">
-                            {{ item.status }}
+                            {{ 'DEMANDES.STATUS.' + item.status | translate }}
                           </span>
                         </div>
-                        <span class="f-s-12 text-muted d-block">
-                          Du {{ item.dateDebut | date:'dd/MM/yyyy' }} au {{ item.dateFin | date:'dd/MM/yyyy' }}
+                        <span class="text-xs text-[var(--mat-sys-on-background)]/60 block">
+                          {{ 'DEMANDES.PERIOD' | translate:{ start: (item.dateDebut | date:'dd/MM/yyyy'), end: (item.dateFin | date:'dd/MM/yyyy') } }}
                         </span>
-                        <span class="f-s-12 text-dark m-t-4 d-block"><em>Motif : {{ item.motif }}</em></span>
+                        <span class="text-xs text-[var(--mat-sys-on-background)]/80 block italic">
+                          {{ 'DEMANDES.REASON_LABEL' | translate }}: {{ item.motif }}
+                        </span>
                       </div>
 
                       @if (item.status === statuts.EN_ATTENTE) {
-                        <button mat-stroked-button color="warn" (click)="annulerDemande(item.id)">
-                          Annuler
+                        <button mat-stroked-button color="warn" (click)="annulerDemande(item.id)" class="!rounded-xl flex-shrink-0">
+                          {{ 'DEMANDES.ACTIONS.CANCEL' | translate }}
                         </button>
                       }
                     </div>
@@ -175,78 +165,75 @@
       </div>
     </mat-tab>
 
-   <!-- ========================================== -->
-<!-- ONGLET 2 : VALIDATION ÉQUIPE (Manager / Admin) -->
-<!-- ========================================== -->
-@if (isManager()) {
-  <mat-tab label="Demandes à valider">
-    <div class="row m-t-24">
-      <div class="col-12">
-        <mat-card class="cardWithShadow overflow-hidden">
-          <mat-card-header class="p-16">
-            <mat-card-title class="f-s-16 f-w-600 text-dark">
-              Demandes en attente ({{ demandesAValider().length }})
-            </mat-card-title>
-          </mat-card-header>
+    <!-- ONGLET 2 : VALIDATION ÉQUIPE -->
+    @if (isManager()) {
+      <mat-tab [label]="'DEMANDES.TABS.TO_VALIDATE' | translate">
+        <div class="mt-6">
+          <mat-card class="!bg-[var(--mat-sys-surface)] !rounded-2xl !border !border-[var(--mat-sys-outline)] !shadow-sm overflow-hidden">
+            <div class="p-6 border-b border-[var(--mat-sys-outline)]">
+              <h2 class="text-base font-bold text-[var(--mat-sys-on-background)]">
+                {{ 'DEMANDES.VALIDATION.PENDING_COUNT' | translate:{ count: demandesAValider().length } }}
+              </h2>
+            </div>
 
-          <mat-card-content class="p-16">
-            @if (demandesAValider().length === 0) {
-              <div class="p-32 text-center m-t-16">
-                <mat-icon color="primary" class="f-s-32 m-b-8">check_circle</mat-icon>
-                <p class="f-s-14 f-w-500 text-muted m-b-4">Aucune demande en attente</p>
-                <span class="f-s-12 text-muted">Toutes les demandes de votre équipe ont été traitées.</span>
-              </div>
-            } @else {
-              <div class="d-flex flex-column gap-16 m-t-16">
-                @for (item of demandesAValider(); track item.id) {
-                  <mat-card class="p-16 bg-light rounded">
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-16">
-                      <div>
-                        <div class="d-flex align-items-center gap-8 m-b-4">
-                          <strong class="f-s-15 text-primary">
+            <mat-card-content class="!p-6 max-h-[600px] overflow-y-auto">
+              @if (demandesAValider().length === 0) {
+                <div class="p-8 text-center flex flex-col items-center justify-center border border-[var(--mat-sys-outline)] rounded-2xl gap-2">
+                  <mat-icon class="!w-8 !h-8 !text-3xl text-[var(--mat-sys-primary)]">check_circle</mat-icon>
+                  <p class="text-sm font-bold text-[var(--mat-sys-on-background)]">
+                    {{ 'DEMANDES.VALIDATION.EMPTY_TITLE' | translate }}
+                  </p>
+                  <span class="text-xs text-[var(--mat-sys-on-background)]/50">
+                    {{ 'DEMANDES.VALIDATION.EMPTY_SUBTITLE' | translate }}
+                  </span>
+                </div>
+              } @else {
+                <div class="space-y-4">
+                  @for (item of demandesAValider(); track item.id) {
+                    <div class="p-5 bg-transparent border border-[var(--mat-sys-outline)] hover:border-[var(--mat-sys-primary)]/40 rounded-2xl transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                      <div class="min-w-0 flex-1 space-y-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                          <strong class="text-sm font-bold text-[var(--mat-sys-primary)]">
                             {{ item.employe?.prenom }} {{ item.employe?.nom }}
                           </strong>
-                          <span class="f-s-12 text-muted">
-                            ({{ item.employe?.organization?.nom || 'Sans entité' }})
+                          <span class="text-xs text-[var(--mat-sys-on-background)]/50">
+                            ({{ item.employe?.organization?.nom || ('DEMANDES.NO_ENTITY' | translate) }})
                           </span>
                         </div>
-                        <span class="f-s-13 f-w-600 text-dark d-block m-b-4">
-                          Type: {{ item.typeDemande }} {{ item.type_conge ? '(' + item.type_conge + ')' : '' }}
+                        <span class="text-xs font-semibold text-[var(--mat-sys-on-background)] block">
+                          {{ 'DEMANDES.VALIDATION.TYPE_LABEL' | translate }}: {{ 'DEMANDES.TYPES.' + item.typeDemande | translate }} {{ item.type_conge ? '(' + item.type_conge + ')' : '' }}
                         </span>
-                        <span class="f-s-12 text-muted d-block">
-                          Période: du {{ item.dateDebut | date:'dd/MM/yyyy' }} au {{ item.dateFin | date:'dd/MM/yyyy' }}
+                        <span class="text-xs text-[var(--mat-sys-on-background)]/60 block">
+                          {{ 'DEMANDES.PERIOD' | translate:{ start: (item.dateDebut | date:'dd/MM/yyyy'), end: (item.dateFin | date:'dd/MM/yyyy') } }}
                         </span>
-                        <p class="f-s-12 text-dark m-t-8 m-b-0">
-                          <strong>Motif:</strong> {{ item.motif }}
+                        <p class="text-xs text-[var(--mat-sys-on-background)]/80 mt-1">
+                          <strong>{{ 'DEMANDES.REASON_LABEL' | translate }}:</strong> {{ item.motif }}
                         </p>
 
                         @if (item.justificatif) {
-                          <a [href]="item.justificatif" target="_blank" class="f-s-12 text-primary m-t-4 d-inline-block">
-                            📄 Voir le justificatif
+                          <a [href]="item.justificatif" target="_blank" class="text-xs text-[var(--mat-sys-primary)] underline block mt-1">
+                            📄 {{ 'DEMANDES.ACTIONS.VIEW_ATTACHMENT' | translate }}
                           </a>
                         }
                       </div>
 
-                      <div class="d-flex gap-8">
-                        <button mat-stroked-button color="primary" (click)="traiterDemande(item.id, statuts.VALIDE)">
-                          Valider
+                      <div class="flex items-center gap-2 flex-shrink-0 self-end md:self-center">
+                        <button mat-flat-button color="primary" (click)="traiterDemande(item.id, statuts.VALIDE)" class="!rounded-xl">
+                          {{ 'DEMANDES.ACTIONS.APPROVE' | translate }}
                         </button>
-                        <button mat-stroked-button color="warn" (click)="traiterDemande(item.id, statuts.REFUSE)">
-                          Refuser
+                        <button mat-stroked-button color="warn" (click)="traiterDemande(item.id, statuts.REFUSE)" class="!rounded-xl">
+                          {{ 'DEMANDES.ACTIONS.REJECT' | translate }}
                         </button>
                       </div>
                     </div>
-                  </mat-card>
-                }
-              </div>
-            }
-          </mat-card-content>
-        </mat-card>
-      </div>
-    </div>
-  </mat-tab>
-}
-
-
+                  }
+                </div>
+              }
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+    }
+    
   </mat-tab-group>
 </div>

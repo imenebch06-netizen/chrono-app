@@ -7,6 +7,8 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { TranslateModule } from '@ngx-translate/core';
+import { LanguageService } from 'src/app/services/language.service';
 import { UserService, Employe } from 'src/app/services/user.service';
 
 @Component({
@@ -21,14 +23,15 @@ import { UserService, Employe } from 'src/app/services/user.service';
     MatButtonModule,
     MatDividerModule,
     MatProgressSpinnerModule,
-    UpperCasePipe
+    UpperCasePipe,
+    TranslateModule
   ],
   templateUrl: './details-employe.component.html'
 })
 export class DetailsEmployeComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private userService = inject(UserService);
-
+  public languageService = inject(LanguageService);
   user = signal<Employe | null>(null);
   isLoading = signal<boolean>(true);
 

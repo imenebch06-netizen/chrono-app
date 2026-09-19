@@ -12,6 +12,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { SelectionModel } from '@angular/cdk/collections';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { LanguageService } from 'src/app/services/language.service';
 
 import { UserService, Employe, Role } from 'src/app/services/user.service';
 import { OrganizationService, Organization } from 'src/app/services/organization.service';
@@ -33,7 +35,8 @@ import { ConfirmDialogComponent } from '../confirm-dialog/confirm-dialog.compone
     MatCardModule,
     MatTooltipModule,
     MatSnackBarModule,
-    MatCheckboxModule
+    MatCheckboxModule,
+    TranslateModule
   ],
   templateUrl: './data-table.component.html'
 })
@@ -44,11 +47,25 @@ export class DataTableTestComponent implements OnInit, AfterViewInit, OnChanges 
   private dialog = inject(MatDialog);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
+  private translate = inject(TranslateService);
+  public languageService = inject(LanguageService);
 
   @Input() isReadOnly: boolean = false;
   @Input() showEditDelete: boolean = true;
   @Input() viewMode: 'ALL' | 'TEAM' | 'WITHOUT_PLANNING' = 'ALL';
   @Input() enableSelection: boolean = false;
+
+  private filtreEtatCourant: string = 'TOUS';
+  private filtreTexteCourant: string = '';
+
+
+  @Input() set data(value: any[]) {
+    if (value) {
+      this.isExternalData = true; 
+      this.dataSource.data = [...value];
+      this.rafraichirTable();
+    }
+  }
 
   public selection = new SelectionModel<any>(true, []);
 
@@ -60,12 +77,13 @@ export class DataTableTestComponent implements OnInit, AfterViewInit, OnChanges 
   dataSource = new MatTableDataSource<Employe>([]);
   public organizationsList: Organization[] = [];
   private organizationsMap = new Map<number, Organization>();
+  private isExternalData: boolean = false;
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
   private notifier(message: string, estErreur: boolean = false): void {
-    this.snackBar.open(message, 'Fermer', {
+    this.snackBar.open(message, this.translate.instant('EMPLOYEE_TABLE.NOTIFICATIONS.CLOSE'), {
       duration: 4000,
       horizontalPosition: 'end',
       verticalPosition: 'bottom',
@@ -75,7 +93,24 @@ export class DataTableTestComponent implements OnInit, AfterViewInit, OnChanges 
 
   ngOnInit(): void {
     this.initialiserColonnes();
-    this.chargerToutEnSequence();
+    this.configurerFiltreCombine();
+    this.chargerOrganisations();
+    
+    this.translate.onLangChange.subscribe(() => {
+    this.cdr.markForCheck();
+  }); 
+  }
+  private configurerFiltreCombine(): void {
+    this.dataSource.filterPredicate = (data: any, filter: string) => {
+      const matchEtat = (this.filtreEtatCourant === 'TOUS') || 
+        ((data.etat || 'NON_ASSIGNEE').toLowerCase() === this.filtreEtatCourant.toLowerCase());
+
+      const motCle = this.filtreTexteCourant.toLowerCase().trim();
+      const matchTexte = !motCle || 
+        `${data.nom || ''} ${data.prenom || ''} ${data.email || ''} ${data.role || ''}`.toLowerCase().includes(motCle);
+
+      return matchEtat && matchTexte;
+    };
   }
 
   private initialiserColonnes(): void {
@@ -106,8 +141,8 @@ export class DataTableTestComponent implements OnInit, AfterViewInit, OnChanges 
     if (changes['enableSelection']) {
       this.initialiserColonnes();
     }
-    if (changes['viewMode'] && !changes['viewMode'].firstChange) {
-      this.chargerToutEnSequence();
+    if (changes['viewMode'] && !changes['viewMode'].firstChange && !this.isExternalData) {
+      this.chargerEmployes();
     }
   }
 
@@ -116,7 +151,8 @@ export class DataTableTestComponent implements OnInit, AfterViewInit, OnChanges 
     this.dataSource.sort = this.sort;
   }
 
-  chargerToutEnSequence(): void {
+  
+  chargerOrganisations(): void {
     this.orgService.getOrganizations().subscribe({
       next: (res: any) => {
         const orgs: Organization[] = Array.isArray(res) ? res : (res?.data || []);
@@ -129,16 +165,21 @@ export class DataTableTestComponent implements OnInit, AfterViewInit, OnChanges 
           }
         });
 
-        this.chargerEmployes();
+        if (!this.isExternalData) {
+          this.chargerEmployes();
+        }
       },
       error: (err) => {
         console.error('Erreur chargement organisations:', err);
-        this.chargerEmployes();
+        if (!this.isExternalData) {
+          this.chargerEmployes();
+        }
       }
     });
   }
 
   chargerEmployes(): void {
+    if (this.isExternalData) return;
     this.selection.clear();
 
     if (this.viewMode === 'ALL') {
@@ -158,13 +199,11 @@ export class DataTableTestComponent implements OnInit, AfterViewInit, OnChanges 
             : (res?.subordinates || res?.data || res?.users || []);
 
           if (this.viewMode === 'WITHOUT_PLANNING') {
-  employes = employes.filter((emp: any) => {
-    // 🟢 Si le tableau n'existe pas ou s'il est vide -> il N'A PAS de planning
-    const aUnPlanning = Array.isArray(emp.plannings) && emp.plannings.length > 0;
-    
-    return !aUnPlanning;
-  });
-}
+            employes = employes.filter((emp: any) => {
+              const aUnPlanning = Array.isArray(emp.plannings) && emp.plannings.length > 0;
+              return !aUnPlanning;
+            });
+          }
 
           this.dataSource.data = employes;
           this.rafraichirTable();
@@ -194,19 +233,37 @@ export class DataTableTestComponent implements OnInit, AfterViewInit, OnChanges 
 
   getOrgPath(element: Employe | any): string {
     const orgId = this.extractOrgId(element);
-    return orgId ? this.buildOrgPath(orgId) : 'Non rattaché';
+    return orgId ? this.buildOrgPath(orgId) : this.translate.instant('EMPLOYEE_TABLE.NOT_ATTACHED');
   }
 
+ getOrgName(element: any): string {
+  const orgId = this.extractOrgId(element);
+  
+ 
+  const org = (orgId ? this.organizationsMap.get(orgId) : null) || element.organization;
+
+  if (!org) {
+    return orgId 
+      ? (this.translate.instant('EMPLOYEE_TABLE.ORG_PREFIX') + orgId) 
+      : this.translate.instant('EMPLOYEE_TABLE.NOT_ATTACHED');
+  }
+
+  const isEnglish = !this.languageService.isFrench();
+  return (isEnglish && org.nom_en) ? org.nom_en : org.nom;
+}
+
+  
   private buildOrgPath(orgId: number): string {
     let current = this.organizationsMap.get(Number(orgId));
-    if (!current) return `Organisation #${orgId}`;
+    if (!current) return `${this.translate.instant('EMPLOYEE_TABLE.ORG_PREFIX')}${orgId}`;
 
     const pathNames: string[] = [];
     const visited = new Set<number>();
 
     while (current && current.id !== undefined && !visited.has(Number(current.id))) {
       visited.add(Number(current.id));
-      pathNames.unshift(current.nom);
+      const nomLangue = (!this.languageService.isFrench() && current.nom_en) ? current.nom_en : current.nom;
+      pathNames.unshift(nomLangue);
       
       const parentId: number | undefined = current.idOrganizationSup ?? (current as any).organizationSup?.id;
       current = parentId !== undefined ? this.organizationsMap.get(Number(parentId)) : undefined;
@@ -221,7 +278,7 @@ export class DataTableTestComponent implements OnInit, AfterViewInit, OnChanges 
     const dialogRef = this.dialog.open(MonFormDialogComponent, {
       width: '600px',
       data: { 
-        nom: '', prenom: '', email: '', password: '', adress: '', 
+        nom: '', prenom: '', email: '', password: '', adress: '', adress_en: '',
         role: Role.EMPLOYE, organizationId: null, organizations: this.organizationsList
       }
     });
@@ -231,14 +288,14 @@ export class DataTableTestComponent implements OnInit, AfterViewInit, OnChanges 
         const payload = this.cleanPayload(nouveau);
         this.userService.createUser(payload).subscribe({
           next: () => {
-            this.notifier('✅ Nouvel employé créé avec succès !');
-            this.chargerToutEnSequence();
+            this.notifier(this.translate.instant('EMPLOYEE_TABLE.NOTIFICATIONS.CREATE_SUCCESS'));
+            this.chargerOrganisations();
           },
           error: (err) => {
             const messageServeur = Array.isArray(err.error?.message) 
               ? err.error.message.join(', ') 
               : err.error?.message;
-            this.notifier(`❌ Erreur création : ${messageServeur || 'Données invalides'}`, true);
+            this.notifier(`${this.translate.instant('EMPLOYEE_TABLE.NOTIFICATIONS.CREATE_ERROR')}${messageServeur || this.translate.instant('EMPLOYEE_TABLE.NOTIFICATIONS.INVALID_DATA')}`, true);
           }
         });
       }
@@ -277,10 +334,10 @@ export class DataTableTestComponent implements OnInit, AfterViewInit, OnChanges 
       const payload = this.cleanPayload(resultat);
       this.userService.updateUser(element.id, payload).subscribe({
         next: () => {
-          this.notifier('✅ Employé mis à jour avec succès !');
-          this.chargerToutEnSequence();
+          this.notifier(this.translate.instant('EMPLOYEE_TABLE.NOTIFICATIONS.UPDATE_SUCCESS'));
+          this.chargerOrganisations();
         },
-        error: () => this.notifier('❌ Erreur lors de la modification de l\'employé', true)
+        error: () => this.notifier(this.translate.instant('EMPLOYEE_TABLE.NOTIFICATIONS.UPDATE_ERROR'), true)
       });
     });
   }
@@ -292,6 +349,9 @@ export class DataTableTestComponent implements OnInit, AfterViewInit, OnChanges 
       email: source.email?.trim(),
       role: source.role,
       adress: source.adress?.trim() || null,
+      adress_en: source.adress_en?.trim() || null,
+      latitude: source.latitude ?? null,
+    longitude: source.longitude ?? null,
       organizationId: (source.organizationId !== null && source.organizationId !== undefined && source.organizationId !== '') 
         ? Number(source.organizationId) 
         : null
@@ -308,17 +368,17 @@ export class DataTableTestComponent implements OnInit, AfterViewInit, OnChanges 
     this.router.navigate(['mes-employes/employe', element.id]);
   }
 
-    delete(element: Employe): void {
+  delete(element: Employe): void {
     if (this.isReadOnly) return;
 
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '420px',
       panelClass: 'custom-dialog-container',
       data: {
-        title: 'Supprimer un employé',
-        message: `Voulez-vous vraiment supprimer ${element.prenom} ${element.nom} ?`,
-        confirmText: 'Oui, supprimer',
-        cancelText: 'Annuler'
+        title: this.translate.instant('EMPLOYEE_TABLE.DIALOG.DELETE_TITLE'),
+        message: this.translate.instant('EMPLOYEE_TABLE.DIALOG.DELETE_CONFIRM_MSG', { name: `${element.prenom} ${element.nom}` }),
+        confirmText: this.translate.instant('EMPLOYEE_TABLE.DIALOG.YES_DELETE'),
+        cancelText: this.translate.instant('EMPLOYEE_TABLE.DIALOG.CANCEL')
       }
     });
 
@@ -333,8 +393,8 @@ export class DataTableTestComponent implements OnInit, AfterViewInit, OnChanges 
     this.userService.deleteUser(element.id).subscribe({
       next: () => {
         this.snackBar.open(
-          `✅ Employé "${element.prenom} ${element.nom}" supprimé avec succès !`,
-          'Fermer',
+          this.translate.instant('EMPLOYEE_TABLE.NOTIFICATIONS.DELETE_SUCCESS', { name: `${element.prenom} ${element.nom}` }),
+          this.translate.instant('EMPLOYEE_TABLE.NOTIFICATIONS.CLOSE'),
           {
             duration: 4000,
             horizontalPosition: 'end',
@@ -342,7 +402,7 @@ export class DataTableTestComponent implements OnInit, AfterViewInit, OnChanges 
             panelClass: ['bg-slate-900', 'text-white']
           }
         );
-        this.chargerToutEnSequence();
+        this.chargerOrganisations();
       },
       error: (err) => {
         const messageServeur = Array.isArray(err.error?.message)
@@ -350,8 +410,8 @@ export class DataTableTestComponent implements OnInit, AfterViewInit, OnChanges 
           : err.error?.message;
 
         this.snackBar.open(
-          `❌ Impossible de supprimer : ${messageServeur || 'Erreur serveur'}`,
-          'Fermer',
+          `${this.translate.instant('EMPLOYEE_TABLE.NOTIFICATIONS.DELETE_ERROR')}${messageServeur || this.translate.instant('EMPLOYEE_TABLE.NOTIFICATIONS.SERVER_ERROR')}`,
+          this.translate.instant('EMPLOYEE_TABLE.NOTIFICATIONS.CLOSE'),
           {
             duration: 4000,
             horizontalPosition: 'end',
@@ -364,69 +424,68 @@ export class DataTableTestComponent implements OnInit, AfterViewInit, OnChanges 
   }
 
   appliquerFiltre(event: Event | string): void {
-    const filterValue = typeof event === 'string' ? event : (event.target as HTMLInputElement).value;
-    this.dataSource.filter = filterValue.trim().toLowerCase();
+    this.filtreTexteCourant = typeof event === 'string' ? event : (event.target as HTMLInputElement).value;
+    this.dataSource.filter = `${this.filtreEtatCourant}-${this.filtreTexteCourant}`;
   }
 
   filtrerParRole(roleSelectionne: string): void {
     this.dataSource.filter = roleSelectionne.trim().toLowerCase();
   }
 
-
-  // Ajouter les méthodes suivantes à la classe DataTableTestComponent :
-
-/**
- * Libellés lisibles pour chaque état
- */
-getLibelleEtat(etat: string): string {
-  switch (etat) {
-    case 'PRESENT': return 'Présent';
-    case 'CONGE': return 'En Congé';
-    case 'RECUPERATION': return 'Récupération';
-    case 'REPOS': return 'Repos';
-    case 'ABSENT_JUSTIFIE': return 'Abs. Justifiée';
-    case 'ABSENT_NON_JUSTIFIE': return 'Abs. Non Justifiée';
-    default: return 'Repos';
+ 
+  getLibelleEtat(etat: string): string {
+    if (!etat) return this.translate.instant('EMPLOYEE_TABLE.STATUS.NOT_ASSIGNED');
+    switch (etat) {
+      case 'PRESENT': return this.translate.instant('EMPLOYEE_TABLE.STATUS.PRESENT');
+      case 'CONGE': return this.translate.instant('EMPLOYEE_TABLE.STATUS.ON_LEAVE');
+      case 'RECUPERATION': return this.translate.instant('EMPLOYEE_TABLE.STATUS.RECOVERY');
+      case 'REPOS': return this.translate.instant('EMPLOYEE_TABLE.STATUS.REST');
+      case 'ABSENT_JUSTIFIE': return this.translate.instant('EMPLOYEE_TABLE.STATUS.JUSTIFIED_ABSENCE');
+      case 'ABSENT_NON_JUSTIFIE': return this.translate.instant('EMPLOYEE_TABLE.STATUS.UNJUSTIFIED_ABSENCE');
+      case 'NON_ASSIGNEE': return this.translate.instant('EMPLOYEE_TABLE.STATUS.NOT_ASSIGNED');
+      default: return etat;
+    }
   }
-}
 
-getIconEtat(etat: string): string {
-  switch (etat) {
-    case 'PRESENT': return 'check_circle';
-    case 'CONGE': return 'flight_takeoff';
-    case 'RECUPERATION': return 'autorenew';
-    case 'REPOS': return 'bed';
-    case 'ABSENT_JUSTIFIE': return 'verified';
-    case 'ABSENT_NON_JUSTIFIE': return 'warning';
-    default: return 'bed';
+  getIconEtat(etat: string): string {
+    if (!etat) return 'event_busy';
+    switch (etat) {
+      case 'PRESENT': return 'check_circle';
+      case 'CONGE': return 'flight_takeoff';
+      case 'RECUPERATION': return 'autorenew';
+      case 'REPOS': return 'bed';
+      case 'ABSENT_JUSTIFIE': return 'verified';
+      case 'ABSENT_NON_JUSTIFIE': return 'warning';
+      case 'NON_ASSIGNEE': return 'event_busy';
+      default: return 'bed';
+    }
   }
-}
 
-getColorEtat(etat: string): string {
-  switch (etat) {
-    case 'PRESENT': return 'text-success';
-    case 'CONGE': return 'text-primary';
-    case 'RECUPERATION': return 'text-info';
-    case 'REPOS': return 'text-secondary';
-    case 'ABSENT_JUSTIFIE': return 'text-warning';
-    case 'ABSENT_NON_JUSTIFIE': return 'text-error';
-    default: return 'text-secondary';
+  getColorEtat(etat: string): string {
+    if (!etat) return 'text-secondary';
+    switch (etat) {
+      case 'PRESENT': return 'text-success';
+      case 'CONGE': return 'text-primary';
+      case 'RECUPERATION': return 'text-info';
+      case 'REPOS': return 'text-secondary';
+      case 'ABSENT_JUSTIFIE': return 'text-warning';
+      case 'ABSENT_NON_JUSTIFIE': return 'text-error';
+      case 'NON_ASSIGNEE': return 'text-warning';
+      default: return 'text-secondary';
+    }
   }
-}
 
-
-/**
- * Filtrer dynamiquement la table par état
- */
-filtrerParEtat(etat: string): void {
-  if (etat === 'TOUS') {
-    this.dataSource.filter = '';
-  } else {
-    this.dataSource.filterPredicate = (data: Employe, filter: string) => {
-      const etatEmp = (data as any).etat || 'REPOS';
-      return etatEmp.toLowerCase() === filter.toLowerCase();
-    };
-    this.dataSource.filter = etat.toLowerCase();
+  filtrerParEtat(etat: string): void {
+    this.filtreEtatCourant = etat;
+    this.dataSource.filter = `${this.filtreEtatCourant}-${this.filtreTexteCourant}`;
   }
-}
+
+  
+  setData(data: any[]): void {
+    if (data) {
+      this.isExternalData = true; 
+      this.dataSource.data = [...data];
+      this.rafraichirTable();
+    }
+  }
 }

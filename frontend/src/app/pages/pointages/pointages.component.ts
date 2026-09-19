@@ -8,6 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { TablerIconsModule } from 'angular-tabler-icons';
 
 import { PointageService, Pointage } from 'src/app/services/pointage.service';
@@ -26,6 +27,7 @@ import { AuthService } from 'src/app/services/auth.service';
     MatInputModule,
     MatFormFieldModule,
     MatSnackBarModule,
+    TranslateModule,
     TablerIconsModule
   ],
   templateUrl: './pointages.component.html'
@@ -34,13 +36,12 @@ export class PointagesComponent implements OnInit {
   private pointageService = inject(PointageService);
   private authService = inject(AuthService);
   private snackBar = inject(MatSnackBar);
+  private translateService = inject(TranslateService);
 
   public isAdmin: boolean = false;
   
-  // Filtre de date journalier
   public selectedDate: string = new Date().toISOString().split('T')[0];
 
-  // Données de la table
   public dataSource = new MatTableDataSource<Pointage>([]);
   public displayedColumns: string[] = ['employe', 'date', 'heureDebut', 'heureFin', 'dureeHeures', 'creditDebit'];
 
@@ -55,21 +56,18 @@ export class PointagesComponent implements OnInit {
 
   chargerPointages(): void {
     if (this.isAdmin) {
-      // 🟢 Admin : Récupère tous les pointages globaux de la date
       this.pointageService.getPointagesParDate(this.selectedDate).subscribe({
         next: (res) => this.dataSource.data = res.pointages || [],
-        error: () => this.notifier('❌ Erreur lors de la récupération des pointages', true)
+        error: () => this.notifier(this.translateService.instant('POINTAGES-GL.ERR_FETCH_POINTAGES'), true)
       });
     } else {
-      // 🔵 Employé responsable d'organisation : Récupère les pointages de ses subordonnés
       this.pointageService.getMonEquipe(this.selectedDate).subscribe({
         next: (res) => this.dataSource.data = res.pointages || [],
-        error: () => this.notifier('❌ Erreur lors de la récupération des pointages de votre équipe', true)
+        error: () => this.notifier(this.translateService.instant('POINTAGES-GL.ERR_FETCH_TEAM'), true)
       });
     }
   }
 
-  // 🟢 IMPORTATION EXCEL (ADMIN SEULEMENT)
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
@@ -80,21 +78,23 @@ export class PointagesComponent implements OnInit {
     this.pointageService.importerPointagesExcel(file).subscribe({
       next: (res) => {
         this.isUploading = false;
-        this.notifier(`✅ ${res.message || 'Importation réussie avec succès !'}`);
+        const msgSuccess = res.message || this.translateService.instant('POINTAGES-GL.IMPORT_SUCCESS');
+        this.notifier(`✅ ${msgSuccess}`);
         this.chargerPointages();
         input.value = '';
       },
       error: (err) => {
         this.isUploading = false;
-        const msg = err.error?.message || 'Erreur lors de l\'importation du fichier Excel';
-        this.notifier(`❌ ${msg}`, true);
+        const msgErr = err.error?.message || this.translateService.instant('POINTAGES-GL.ERR_IMPORT');
+        this.notifier(`❌ ${msgErr}`, true);
         input.value = '';
       }
     });
   }
 
   private notifier(message: string, estErreur: boolean = false): void {
-    this.snackBar.open(message, 'Fermer', {
+    const closeLabel = this.translateService.instant('POINTAGES-GL.CLOSE');
+    this.snackBar.open(message, closeLabel, {
       duration: 4500,
       horizontalPosition: 'end',
       verticalPosition: 'bottom',

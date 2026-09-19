@@ -15,12 +15,12 @@
     width: 100%;
   }
 
-  /* 💳 CARTE D'ORGANISATION (Style Modern / Premium) */
+  
   .org-card {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
+    background: var(--mat-sys-surface, #ffffff);
+    border: 1px solid var(--mat-sys-outline-variant, #e2e8f0);
     border-radius: 14px;
-    padding: 12px 16px; // 🔑 Padding contrôlé (Haut/Bas : 12px, Gauche/Droite : 16px)
+    padding: 12px 16px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.03);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
@@ -28,9 +28,9 @@
     z-index: 2;
 
     &:hover {
-      border-color: #cbd5e1;
+      border-color: var(--mat-sys-outline, #cbd5e1);
       transform: translateY(-2px);
-      box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.12), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
 
     &.leaf-card {
@@ -41,7 +41,7 @@
     }
   }
 
-  /* EN-TÊTE DE LA CARTE */
+ 
   .card-header {
     display: flex;
     align-items: center;
@@ -54,16 +54,19 @@
       align-items: center;
       gap: 8px;
       overflow: hidden;
+      min-width: 0; /* FIX 1 : Permet aux enfants de tronquer sans pousser la carte */
+      flex: 1;
     }
 
     .org-title {
       font-size: 13px;
       font-weight: 700;
-      color: #1e293b;
+      color: var(--mat-sys-on-background, #1e293b);
       margin: 0;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      min-width: 0;
     }
 
     .type-badge {
@@ -75,30 +78,33 @@
       letter-spacing: 0.5px;
       border: 1px solid transparent;
       white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .toggle-btn {
+      flex-shrink: 0;
       width: 28px !important;
       height: 28px !important;
       line-height: 28px !important;
-      color: #64748b;
+      color: var(--mat-sys-surface-container-low, #64748b);
 
       mat-icon {
         font-size: 20px;
         width: 20px;
         height: 20px;
+        color: var(--mat-sys-surface-container-low, #64748b);
       }
     }
   }
 
-  /* CORPS DE LA CARTE (Infos Manager & Effectif) */
+ 
   .card-body {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
     padding-top: 8px;
-    border-top: 1px solid #f1f5f9;
+    border-top: 1px solid var(--mat-sys-outline-variant, #f1f5f9);
 
     .info-pill {
       display: flex;
@@ -106,49 +112,70 @@
       gap: 5px;
       font-size: 11px;
       font-weight: 600;
-      color: #475569;
+      color: var(--mat-sys-on-background, #475569);
+    }
+    .manager-pill {
+      min-width: 0; 
+      flex: 1;
+
+      .manager-name {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis; 
+      }
+    }
+
+    .effectif-pill {
+      flex-shrink: 0; 
+      white-space: nowrap;
+      background: color-mix(in srgb, var(--mat-sys-on-background, #17202a) 4%, transparent);
+      padding: 2px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--mat-sys-outline-variant, #e2e8f0);
     }
 
     .pill-icon {
+      flex-shrink: 0;
       font-size: 16px;
       width: 16px;
       height: 16px;
-      color: #94a3b8;
+      color: var(--mat-sys-surface-container-low, #94a3b8);
 
       &.text-indigo {
-        color: #6366f1;
+        color: var(--mat-sys-primary, #6366f1);
       }
     }
 
     .vacant-tag {
+      flex-shrink: 0;
       font-size: 10px;
       font-weight: 700;
-      color: #e11d48;
-      background: #ffe4e6;
+      color: var(--mat-sys-error, #e11d48);
+      background: rgba(225, 29, 72, 0.12);
       padding: 1px 6px;
       border-radius: 4px;
-      border: 1px solid #fecdd3;
+      border: 1px solid rgba(225, 29, 72, 0.25);
     }
 
     .effectif-pill {
-      background: #f8fafc;
+      background: color-mix(in srgb, var(--mat-sys-on-background, #17202a) 4%, transparent);
       padding: 2px 8px;
       border-radius: 6px;
-      border: 1px solid #e2e8f0;
+      border: 1px solid var(--mat-sys-outline-variant, #e2e8f0);
     }
   }
 
-  /* 🌿 LIGNES DE CONNEXION VERTICALES (Haut -> Bas) */
+ 
   .children-branch {
     position: relative;
     padding-top: 12px;
-    padding-left: 20px; // Décale les enfants vers la droite avec la ligne à gauche
+    padding-left: 20px;
     margin-left: 16px;
     display: flex;
     flex-direction: column;
     gap: 12px;
 
-    /* Ligne principale verticale descendant de haut en bas */
+    
     &::before {
       content: '';
       position: absolute;
@@ -156,7 +183,7 @@
       left: 0;
       bottom: 16px;
       width: 2px;
-      background: #cbd5e1; // Couleur de la branche verticale
+      background: var(--mat-sys-outline-variant, #cbd5e1);
       border-radius: 2px;
     }
   }

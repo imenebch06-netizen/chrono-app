@@ -6,12 +6,13 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TablerIconsModule } from 'angular-tabler-icons';
 
 import { Organization, OrganizationService } from '../../services/organization.service';
 import { EditOrgDialogComponent } from '../../components/edit-org-dialog/edit-org-dialog.component';
 import { DataTable2Component } from '../../components/data-table2/data-table2.component';
-import { TablerIconsModule } from 'angular-tabler-icons';
-import { OrgTreeComponent } from '../org-tree/org-tree.component'; // 🔑 Import corrigé
+import { OrgTreeComponent } from '../org-tree/org-tree.component';
 
 @Component({
   selector: 'app-organization',
@@ -25,8 +26,9 @@ import { OrgTreeComponent } from '../org-tree/org-tree.component'; // 🔑 Impor
     MatIconModule,
     MatDialogModule,
     TablerIconsModule,
+    TranslateModule,
     DataTable2Component,
-    OrgTreeComponent // 🔑 Ajouté ici
+    OrgTreeComponent
   ],
   templateUrl: './organization.component.html'
 })
@@ -36,6 +38,7 @@ export class OrganizationComponent implements OnInit {
 
   private orgService = inject(OrganizationService);
   private dialog = inject(MatDialog);
+  private translateService = inject(TranslateService);
   
   organigrammeData: Organization[] = [];
   isLoading = true;
@@ -52,7 +55,7 @@ export class OrganizationComponent implements OnInit {
         this.isLoading = false;
       },
       error: (err) => {
-        console.error('Erreur :', err);
+        console.error(this.translateService.instant('ORGANIZATION.ERROR_LOADING'), err);
         this.isLoading = false;
       }
     });
@@ -72,6 +75,7 @@ export class OrganizationComponent implements OnInit {
       width: '500px',
       data: {
         nom: '',
+        nom_en: '',
         typeOrganizationId: null,
         idOrganizationSup: null,
         allOrgs: currentOrgs
@@ -81,7 +85,8 @@ export class OrganizationComponent implements OnInit {
     dialogRef.afterClosed().subscribe((resultat) => {
       if (resultat && resultat.nom) {
         const payload = {
-          nom: resultat.nom,
+          nom: resultat.nom?.trim(),
+          nom_en: resultat.nom_en?.trim() || null,
           typeOrganizationId: Number(resultat.typeOrganizationId),
           idOrganizationSup: resultat.idOrganizationSup ? Number(resultat.idOrganizationSup) : null
         };
@@ -93,7 +98,7 @@ export class OrganizationComponent implements OnInit {
             }
             this.chargerArbre();
           },
-          error: (err) => console.error('Erreur lors de la création de l\'organisation:', err)
+          error: (err) => console.error(this.translateService.instant('ORGANIZATION.ERROR_CREATING'), err)
         });
       }
     });

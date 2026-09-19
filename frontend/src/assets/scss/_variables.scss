@@ -36,7 +36,7 @@ $dark: #0a081c;
 $boxedWidth: 1200px;
 $border-radius: 12px;
 
-$card-spacer: 30px;
+$card-spacer: 24px;
 
 $text-color: var(--mat-sys-on-background);
 
@@ -45,4 +45,4 @@ $dark-body-bg: #141a21;
 $auth-side-bg: #0a2540;
 
 // layout bg - light/dark
-$layout-bg: #f4f7fb;
+$layout-bg: var(--mat-sys-surface-container-lowest, #f4f7fb);

@@ -1,4 +1,4 @@
-// --- 1. MES STATS PERSONNELLES ---
+
 export interface PersonalStats {
   soldeConges: number;
   soldeRtt: number;
@@ -21,7 +21,7 @@ export interface PersonalStats {
   };
 }
 
-// --- 2. STATS ÉQUIPE (MANAGER) ---
+
 export interface TeamStats {
   organizationNom: string;
   totalSubordonnes: number;
@@ -42,10 +42,17 @@ export interface MembreStatSummary {
   soldeConges: number;
   soldeRtt: number;
   creditDebit: number;
-  statutAujourdhui: 'PRESENT' | 'CONGE' | 'ABSENT';
+  statutAujourdhui:
+    | 'PRESENT'
+    | 'CONGE'
+    | 'RECUPERATION'
+    | 'REPOS'
+    | 'ABSENT_JUSTIFIE'
+    | 'ABSENT_NON_JUSTIFIE'
+    | 'NON_ASSIGNEE';
 }
 
-// --- 3. STATS GLOBALES (ADMIN) ---
+
 export interface AdminGlobalStats {
   totalEmployes: number;
   totalOrganizations: number;

@@ -9,10 +9,11 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { DemandeAbsenceService, DemandeAbsence, StatutDemande, TypeDemande } from 'src/app/services/demande-absence.service';
 import { AuthService } from 'src/app/services/auth.service';
-import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-demandes',
@@ -29,7 +30,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
     MatFormFieldModule,
     MatTabsModule,
     MatProgressSpinnerModule,
-    
+    TranslateModule
   ],
   templateUrl: './demandes.component.html',
 })
@@ -37,9 +38,9 @@ export class DemandesComponent implements OnInit {
   private demandeService = inject(DemandeAbsenceService);
   private authService = inject(AuthService);
   private fb = inject(FormBuilder);
- private snackBar = inject(MatSnackBar);
+  private snackBar = inject(MatSnackBar);
+  private translateService = inject(TranslateService);
 
-  // Signals pour la réactivité
   mesDemandes = signal<DemandeAbsence[]>([]);
   demandesAValider = signal<DemandeAbsence[]>([]);
   isLoading = signal<boolean>(false);
@@ -59,22 +60,20 @@ export class DemandesComponent implements OnInit {
   maxDate!: string;
 
   ngOnInit(): void {
-  this.initForm();
-  this.checkUserRoleAndLoadData();
+    this.initForm();
+    this.checkUserRoleAndLoadData();
 
-  const today = new Date();
+    const today = new Date();
 
-  // Date minimale = demain
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
-  this.minDate = tomorrow.toISOString().split('T')[0];
+    
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    this.minDate = tomorrow.toISOString().split('T')[0];
 
-  // Date maximale = dans 1 an
-  const max = new Date(today);
-  max.setFullYear(today.getFullYear() + 1);
-  this.maxDate = max.toISOString().split('T')[0];
+    const max = new Date(today);
+    max.setFullYear(today.getFullYear() + 1);
+    this.maxDate = max.toISOString().split('T')[0];
   }
-
 
   private initForm(): void {
     this.demandeForm = this.fb.group({
@@ -86,7 +85,7 @@ export class DemandesComponent implements OnInit {
       heures_a_recuperer: [null],
     });
 
-    // Adapter les validations dynamiquement selon le type de demande
+
     this.demandeForm.get('typeDemande')?.valueChanges.subscribe((type) => {
       const typeCongeCtrl = this.demandeForm.get('type_conge');
       const heuresCtrl = this.demandeForm.get('heures_a_recuperer');
@@ -96,7 +95,7 @@ export class DemandesComponent implements OnInit {
         heuresCtrl?.clearValidators();
         dateFinCtrl?.setValidators([Validators.required]);
       } else if (type === TypeDemande.RECUPERATION) {
-        heuresCtrl?.setValidators([Validators.required, Validators.min(0.5),Validators.max(8)]);
+        heuresCtrl?.setValidators([Validators.required, Validators.min(0.5), Validators.max(8)]);
         typeCongeCtrl?.clearValidators();
         dateFinCtrl?.clearValidators();
       } else {
@@ -113,18 +112,35 @@ export class DemandesComponent implements OnInit {
   private checkUserRoleAndLoadData(): void {
     this.isLoading.set(true);
     
-    // Récupération du profil
+   
     this.authService.getProfile().subscribe({
       next: (user: any) => {
         const profile = user?.data || user?.user || user;
-        this.isAdmin.set(profile?.role === 'ADMIN');
-        this.isManager.set(Boolean(profile?.organizationGeree || profile?.isManager));
+        const currentUser = this.authService.getUser() || {};
+        const userRole = String(
+          profile?.role || currentUser?.role || this.authService.getUserRole() || ''
+        ).toUpperCase();
+
+        this.isAdmin.set(userRole === 'ADMIN');
+        this.isManager.set(
+          !this.isAdmin() && (
+            userRole === 'MANAGER' ||
+            userRole === 'DIRECTEUR' ||
+            userRole === 'DIRECTEUR_GENERAL' ||
+            (userRole === 'EMPLOYE' && (
+              currentUser?.isManager === true ||
+              !!currentUser?.managedOrganizationId ||
+              !!currentUser?.organizationId ||
+              currentUser?.poste?.toLowerCase().includes('directeur') ||
+              currentUser?.jobTitle?.toLowerCase().includes('directeur')
+            )) ||
+            Boolean(profile?.organizationGeree || profile?.isManager)
+          )
+        );
 
         this.loadMesDemandes();
 
-        if (this.isAdmin()) {
-          this.loadPendingAdmin();
-        } else if (this.isManager()) {
+        if (this.isManager()) {
           this.loadPendingManager();
         } else {
           this.isLoading.set(false);
@@ -192,28 +208,37 @@ export class DemandesComponent implements OnInit {
         this.demandeForm.reset({ typeDemande: TypeDemande.CONGE, type_conge: 'Congé payé' });
         this.selectedFile = null;
         this.loadMesDemandes();
-        // ✅ Snackbar succès
-      this.snackBar.open('Demande envoyée avec succès !', 'Fermer', {
-        duration: 4000,
-        panelClass: ['snack-success']
-      });
+        
+        this.snackBar.open(
+          this.translateService.instant('DEMANDES.SNACKBAR.SUCCESS'),
+          this.translateService.instant('DEMANDES.SNACKBAR.CLOSE'),
+          {
+            duration: 4000,
+            panelClass: ['snack-success']
+          }
+        );
       },
       error: (err) => {
-       this.isSubmitting.set(false);
+        this.isSubmitting.set(false);
 
-      // ✅ Récupération du message NestJS
-      const errorMessage = err.error?.message || "Une erreur est survenue lors de la création.";
-      const displayMsg = Array.isArray(errorMessage) ? errorMessage[0] : errorMessage;
-        this.snackBar.open(displayMsg, 'Fermer', {
-        duration: 6000,
-        panelClass: ['snack-error']
-      });
+        const errorMessage = err.error?.message || this.translateService.instant('DEMANDES.SNACKBAR.ERROR_DEFAULT');
+        const displayMsg = Array.isArray(errorMessage) ? errorMessage[0] : errorMessage;
+        
+        this.snackBar.open(
+          displayMsg,
+          this.translateService.instant('DEMANDES.SNACKBAR.CLOSE'),
+          {
+            duration: 6000,
+            panelClass: ['snack-error']
+          }
+        );
       },
     });
   }
 
   annulerDemande(id: number): void {
-    if (confirm('Voulez-vous vraiment annuler cette demande ?')) {
+    const confirmMessage = this.translateService.instant('DEMANDES.CONFIRM_CANCEL');
+    if (confirm(confirmMessage)) {
       this.demandeService.annulerMaDemande(id).subscribe({
         next: () => this.loadMesDemandes(),
       });
@@ -223,8 +248,7 @@ export class DemandesComponent implements OnInit {
   traiterDemande(id: number, status: StatutDemande): void {
     this.demandeService.updateStatus(id, status).subscribe({
       next: () => {
-        if (this.isAdmin()) this.loadPendingAdmin();
-        else if (this.isManager()) this.loadPendingManager();
+        if (this.isManager()) this.loadPendingManager();
       },
     });
   }

@@ -1,41 +1,56 @@
 <h2 mat-dialog-title>
-      {{ data.id ? 'Modifier l\'organisation' : 'Ajouter une organisation' }}
-    </h2>
+  {{ (data.id ? 'EDIT_ORG_DIALOG.EDIT_TITLE' : 'EDIT_ORG_DIALOG.ADD_TITLE') | translate }}
+</h2>
 
-    <mat-dialog-content class="p-24 d-flex flex-column gap-16" style="min-width: 400px;">
-      
-      <!-- Nom de l'organisation -->
-      <mat-form-field appearance="outline" class="w-100">
-        <mat-label>Nom de l'organisation *</mat-label>
-        <input matInput [(ngModel)]="data.nom" required placeholder="Ex: Direction Générale">
-      </mat-form-field>
+<mat-dialog-content class="p-24 d-flex flex-column gap-16" style="min-width: 400px;">
+  
+  <!-- Nom (FR) -->
+  <mat-form-field appearance="outline" class="w-100">
+    <mat-label>{{ 'EDIT_ORG_DIALOG.NAME_LABEL' | translate }} (FR)</mat-label>
+    <input 
+      matInput 
+      [(ngModel)]="data.nom" 
+      required 
+      [placeholder]="'EDIT_ORG_DIALOG.NAME_PLACEHOLDER' | translate">
+  </mat-form-field>
 
-      <!-- 🟢 Sélecteur du Type d'organisation -->
-      <mat-form-field appearance="outline" class="w-100">
-        <mat-label>Type d'organisation *</mat-label>
-        <mat-select [(ngModel)]="data.typeOrganizationId" required>
-          <mat-option *ngFor="let type of typesOrganization" [value]="type.id">
-            {{ type.libelle || type.code || ('Type #' + type.id) }}
-          </mat-option>
-        </mat-select>
-      </mat-form-field>
+  <!-- Nom (EN) -->
+  <mat-form-field appearance="outline" class="w-100">
+    <mat-label>{{ 'EDIT_ORG_DIALOG.NAME_LABEL' | translate }} (EN)</mat-label>
+    <input 
+      matInput 
+      [(ngModel)]="data.nom_en" 
+      [placeholder]="'EDIT_ORG_DIALOG.NAME_PLACEHOLDER' | translate">
+  </mat-form-field>
 
-      <!-- Organisation Mère / Supérieure -->
-      <mat-form-field appearance="outline" class="w-100">
-        <mat-label>Organisation Mère (ID Supérieur)</mat-label>
-        <mat-select [(ngModel)]="data.idOrganizationSup">
-          <mat-option [value]="null">-- Aucune (Racine) --</mat-option>
-          <mat-option *ngFor="let org of data.allOrgs" [value]="org.id">
-            {{ org.nom }} (#{{ org.id }})
-          </mat-option>
-        </mat-select>
-      </mat-form-field>
+  <!-- Sélecteur du Type d'organisation -->
+  <mat-form-field appearance="outline" class="w-100">
+    <mat-label>{{ 'EDIT_ORG_DIALOG.TYPE_LABEL' | translate }}</mat-label>
+    <mat-select [(ngModel)]="data.typeOrganizationId" required>
+      <mat-option *ngFor="let type of typesOrganization" [value]="type.id">
+        {{ type.libelle || type.code || (('EDIT_ORG_DIALOG.TYPE_PREFIX' | translate) + type.id) }}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
 
-    </mat-dialog-content>
+  <!-- Organisation Mère / Supérieure (Bilingue) -->
+  <mat-form-field appearance="outline" class="w-100">
+    <mat-label>{{ 'EDIT_ORG_DIALOG.PARENT_LABEL' | translate }}</mat-label>
+    <mat-select [(ngModel)]="data.idOrganizationSup">
+      <mat-option [value]="null">{{ 'EDIT_ORG_DIALOG.NONE_PARENT_OPTION' | translate }}</mat-option>
+      <mat-option *ngFor="let org of data.allOrgs" [value]="org.id">
+        {{ (languageService.isFrench() ? org.nom : (org.nom_en || org.nom)) }} (#{{ org.id }})
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
 
-    <mat-dialog-actions align="end" class="p-16">
-      <button mat-button mat-dialog-close>Annuler</button>
-      <button mat-flat-button color="primary" [disabled]="!isValid()" [mat-dialog-close]="data">
-        Enregistrer
-      </button>
-    </mat-dialog-actions>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="p-16">
+  <button mat-button mat-dialog-close>
+    {{ 'EDIT_ORG_DIALOG.CANCEL' | translate }}
+  </button>
+  <button mat-flat-button color="primary" [disabled]="!isValid()" [mat-dialog-close]="data">
+    {{ 'EDIT_ORG_DIALOG.SAVE' | translate }}
+  </button>
+</mat-dialog-actions>

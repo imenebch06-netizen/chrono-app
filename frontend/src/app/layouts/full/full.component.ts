@@ -16,7 +16,8 @@ import { AppNavItemComponent } from './sidebar/nav-item/nav-item.component';
 import { navItems } from './sidebar/sidebar-data';
 import { AuthService } from 'src/app/services/auth.service';
 import { NavItem } from './sidebar/nav-item/nav-item';
-//import { AppTopstripComponent } from './top-strip/topstrip.component';
+import { ThemeService } from 'src/app/services/theme.service';
+
 
 const MOBILE_VIEW = 'screen and (max-width: 768px)';
 const TABLET_VIEW = 'screen and (min-width: 769px) and (max-width: 1024px)';
@@ -32,7 +33,7 @@ const TABLET_VIEW = 'screen and (min-width: 769px) and (max-width: 1024px)';
     NgScrollbarModule,
     TablerIconsModule,
     HeaderComponent
-    //AppTopstripComponent
+    
 ],
   templateUrl: './full.component.html',
   styleUrls: [],
@@ -46,7 +47,7 @@ export class FullComponent implements OnInit {
   resView = false;
 
   @ViewChild('content', { static: true }) content!: MatSidenavContent;
-  //get options from service
+ 
   options = this.settings.getOptions();
   private layoutChangesSubscription = Subscription.EMPTY;
   private isMobileScreen = false;
@@ -54,6 +55,8 @@ export class FullComponent implements OnInit {
   private isCollapsedWidthFixed = false;
   private htmlElement!: HTMLHtmlElement;
   private authService = inject(AuthService);
+  protected themeService = inject(ThemeService);
+protected theme = this.themeService.theme;
   get isOver(): boolean {
     return this.isMobileScreen;
   }
@@ -68,7 +71,7 @@ export class FullComponent implements OnInit {
     this.layoutChangesSubscription = this.breakpointObserver
       .observe([MOBILE_VIEW, TABLET_VIEW])
       .subscribe((state) => {
-        // SidenavOpened must be reset true when layout changes
+        
         this.options.sidenavOpened = true;
         this.isMobileScreen = state.breakpoints[MOBILE_VIEW];
         if (this.options.sidenavCollapsed == false) {
@@ -76,10 +79,10 @@ export class FullComponent implements OnInit {
         }
       });
 
-    // Initialize project theme with options
+    
 
 
-    // This is for scroll to top
+   
     this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((e) => {
@@ -92,7 +95,7 @@ export class FullComponent implements OnInit {
   ngOnInit(): void {
     const userRole = (this.authService.getUserRole() || '').toUpperCase();
 
-    // 🟢 Filtrage direct des menus de FullComponent selon le rôle
+    
     this.navItems = navItems.filter((item) => {
       if (!item.roles || item.roles.length === 0) return true;
       return item.roles.map((r) => r.toUpperCase()).includes(userRole);

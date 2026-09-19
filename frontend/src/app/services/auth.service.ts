@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, map, Observable, tap } from 'rxjs';
 import { Router } from '@angular/router';
 import { Employe } from './user.service';
+import emailjs from '@emailjs/browser';
 
 @Injectable({
   providedIn: 'root'
@@ -12,7 +13,7 @@ export class AuthService {
   private http = inject(HttpClient);
   private router = inject(Router);
 
-  // 🟢 Endpoints backend NestJS
+
   private authUrl = 'http://localhost:3000/api/auth';
   private profileUrl = 'http://localhost:3000/api/employe/dashboard/me';
   private tokenKey = 'access_token';
@@ -20,20 +21,18 @@ export class AuthService {
 
   private currentUserSubject = new BehaviorSubject<any>(this.getUser());
   public currentUser$ = this.currentUserSubject.asObservable();
-  // -------------------------------------------------------------
-  // 🔑 1. AUTHENTIFICATION (POST /api/auth/login)
-  // -------------------------------------------------------------
+
 login(credentials: { email: string; password: string }): Observable<any> {
     return this.http
       .post<{ access_token: string; user: any }>(`${this.authUrl}/login`, credentials)
       .pipe(
         tap((response) => {
-          // 1. Sauvegarde du token avec TA méthode
+          
           if (response.access_token) {
             this.saveToken(response.access_token);
           }
 
-          // 2. Sauvegarde de l'utilisateur avec la NOUVELLE méthode
+          
           if (response.user) {
             this.saveUser(response.user);
           }
@@ -41,26 +40,51 @@ login(credentials: { email: string; password: string }): Observable<any> {
       );
   }
 
-  // -------------------------------------------------------------
-  // 🛠️ 2. GESTION DU TOKEN (Guard & Interceptor)
-  // -------------------------------------------------------------
+  forgotPassword(email: string): Observable<{ resetToken: string }> {
+    return this.http.post<{ resetToken: string }>(`${this.authUrl}/forgot-password`, { email });
+  }
+
+  resetPassword(data: { token: string; newPassword: string }): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.authUrl}/reset-password`, data);
+  }
+
+ 
+verifyResetToken(token: string): Observable<any> {
+  return this.http.get(`${this.authUrl}/verify-reset-token?token=${token}`);
+}
+
+ 
+  async sendResetEmail(userEmail: string, resetLink: string, userName: string = 'Utilisateur'): Promise<any> {
+    const serviceID = 'service_9ixfkww';  
+    const templateID = 'template_h87s9u7';  
+    const publicKey = 'DKM_bo0uNmtHw2a-n';  
+
+    const templateParams = {
+      to_email: userEmail,
+      to_name: userName,
+      reset_link: resetLink,
+    };
+
+    return emailjs.send(serviceID, templateID, templateParams, publicKey);
+  }
+
   saveToken(token: string): void {
     localStorage.setItem(this.tokenKey, token);
   }
 
-  // 🟢 Utilisé par l'interceptor pour attacher le header Authorization
+  
   getToken(): string | null {
     return localStorage.getItem(this.tokenKey);
   }
 
-  // 🟢 Utilisé par le Guard pour vérifier si l'utilisateur est connecté
+  
   hasToken(): boolean {
     return !!this.getToken();
   }
 
   saveUser(user: any): void {
     localStorage.setItem(this.userKey, JSON.stringify(user));
-    this.currentUserSubject.next(user); // 📢 Informe instantanément le Header
+    this.currentUserSubject.next(user); 
   }
 
   getUser(): any {
@@ -70,7 +94,6 @@ login(credentials: { email: string; password: string }): Observable<any> {
 
 
 
-  // Déconnexion
   logout(): void {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.userKey);
@@ -78,13 +101,9 @@ login(credentials: { email: string; password: string }): Observable<any> {
     this.router.navigate(['/authentication/login']);
   }
 
-  // -------------------------------------------------------------
-  // 👤 3. ESPACE PERSONNEL EMPLOYÉ (/api/employe/dashboard/me)
-  // -------------------------------------------------------------
+
  getProfile(): Observable<any> {
-  return this.http.get<any>(`${this.authUrl}/profile`).pipe(
-    map(res => res.user) // 👈 Si 'res.user' n'existe pas dans le JSON, 'getProfile()' renvoie 'undefined' !
-  );
+    return this.http.get<Employe>(this.profileUrl);
 }
 
 
@@ -96,12 +115,12 @@ login(credentials: { email: string; password: string }): Observable<any> {
     if (!token) return null;
 
     try {
-      // Décode la partie "payload" du Token JWT
+    
       const payloadBase64 = token.split('.')[1];
       const decodedJson = atob(payloadBase64);
       const decoded = JSON.parse(decodedJson);
       
-      // NestJS met souvent le rôle dans "role" ou "roles"
+
       return decoded.role || (decoded.roles ? decoded.roles[0] : null);
     } catch (e) {
       console.error('Erreur de décodage du token', e);

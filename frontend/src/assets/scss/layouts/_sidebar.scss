@@ -6,7 +6,14 @@
   transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
   position: absolute;
   overflow-x: hidden;
-  border-right-width: 0;
+  border-inline-end: 1px solid var(--mat-sys-outline-variant);
+  background-color: var(--mat-sys-surface) !important;
+  color: var(--mat-sys-on-background);
+
+  .mat-drawer-inner-container {
+    background-color: var(--mat-sys-surface) !important;
+    color: var(--mat-sys-on-background) !important;
+  }
 }
 
 .branding {
@@ -17,6 +24,12 @@
   &.mdc-list {
     padding: 0 18px;
     width: $sidenav-desktop;
+
+    app-nav-item {
+      display: block;
+      width: 100%;
+    }
+
     .sub-item-icon {
       width: 16px !important;
       height: 16px !important;
@@ -48,77 +61,6 @@
       background: var(--mat-sys-outline);
       width: 100%;
     }
-
-    .menu-list-item {
-      border-radius: $border-radius;
-      height: 45px;
-      padding: 11px 16px !important;
-      margin-bottom: 4px;
-      width: 100%;
-      &.twoline {
-        height: 60px;
-        align-items: center;
-      }
-
-      &:before,
-      &:focus {
-        z-index: -1;
-      }
-
-      &.disabled {
-        opacity: 0.38;
-      }
-
-      .item-chip {
-        height: 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 10px;
-      }
-
-      &.activeMenu {
-        background-color: var(--mat-sys-primary);
-        box-shadow: 0 17px 20px -8px rgba(77, 91, 236, 0.231372549);
-
-        .mdc-list-item__primary-text {
-          color: $white !important;
-        }
-
-        .mat-mdc-list-item-icon {
-          color: $white !important;
-        }
-      }
-
-      .mdc-list-item__start {
-        margin-right: 10px;
-        margin-left: 0 !important;
-        width: 18px;
-        height: 18px;
-        line-height: 0px;
-        fill: transparent !important;
-        color: var(--mat-sys-on-background);
-      }
-
-      .mdc-list-item__primary-text {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-
-        .arrow-icon {
-          display: flex;
-
-          .mat-icon {
-            font-size: 18px;
-            width: 18px;
-            height: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          }
-        }
-      }
-    }
   }
 }
 
@@ -129,5 +71,5 @@
 }
 
 .side-img {
-  margin-right: -30px;
+  margin-inline-end: -30px;
 }

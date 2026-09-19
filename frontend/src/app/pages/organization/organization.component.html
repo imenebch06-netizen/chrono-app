@@ -1,28 +1,26 @@
-
 <div class="p-24">
 
- <div class="d-flex align-items-center justify-content-between m-b-20 flex-wrap gap-16">
+  <div class="d-flex align-items-center justify-content-between m-b-20 flex-wrap gap-16">
       
 
       <!-- Filtre Recherche -->
-    <mat-form-field appearance="outline" class="hide-hint" style="max-width: 300px;">
-      <mat-label>Rechercher un organisation...</mat-label>
-      <input matInput (keyup)="onSearch($event)" placeholder="Ex: Direction, DSI...">
-      <i-tabler matPrefix name="search" class="icon-18 m-r-8 text-muted"></i-tabler>
+    <mat-form-field appearance="outline" class="hide-hint" style="max-width: 300px; ">
+      <mat-label >{{ 'ORGANIZATION.SEARCH_LABEL' | translate }}</mat-label>
+      <input matInput (keyup)="onSearch($event)" [placeholder]="'ORGANIZATION.SEARCH_PLACEHOLDER' | translate">
+      <i-tabler matPrefix name="search" style="margin-left: 20px" class="icon-18 m-r-8 text-muted"></i-tabler>
     </mat-form-field>
-      <!-- ➕ Bouton Ajouter -->
-      <button mat-flat-button color="primary" class="d-flex align-items-center gap-8" (click)="ajouterOrganization()">
-         <i-tabler name="plus" class="icon-18"></i-tabler>
-        <span>Ajouter une organisation</span>
-      </button>
+
+    <!-- ➕ Bouton Ajouter -->
+    <button mat-flat-button color="primary" class="d-flex align-items-center gap-8" (click)="ajouterOrganization()">
+      <i-tabler name="plus" class="icon-18"></i-tabler>
+      <span>{{ 'ORGANIZATION.ADD_BTN' | translate }}</span>
+    </button>
 
   </div>
 
- <app-data-table2 
-  #dataTableComponent 
-  (orgUpdated)="chargerArbre()">
-</app-data-table2>
-
+  <app-data-table2 
+    #dataTableComponent 
+    (orgUpdated)="chargerArbre()">
+  </app-data-table2>
 
 </div>
-

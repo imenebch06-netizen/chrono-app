@@ -7,6 +7,8 @@ import { AppNavItemComponent } from './nav-item/nav-item.component';
 import { AuthService } from 'src/app/services/auth.service';
 import { NavItem } from './nav-item/nav-item';
 import { CommonModule } from '@angular/common';
+import { ThemeToggleComponent } from 'src/app/components/theme-toggle/theme-toggle.component';
+import { LangToggleComponent } from 'src/app/components/lang-toggle/lang-toggle.component';
 
 @Component({
   selector: 'app-sidebar',
@@ -16,7 +18,10 @@ import { CommonModule } from '@angular/common';
     TablerIconsModule,
     MaterialModule,
     AppNavItemComponent,
-    CommonModule
+    CommonModule,
+    ThemeToggleComponent,
+    LangToggleComponent
+
   ],
   templateUrl: './sidebar.component.html',
 })
@@ -34,7 +39,7 @@ export class SidebarComponent implements OnInit {
     const userRole = (this.authService.getUserRole() || '').toUpperCase();
     const currentUser = this.authService.getUser();
 
-    // 🟢 Règle Manager élargie et corrigée
+  
     const isManager = 
       userRole === 'MANAGER' || 
       userRole === 'DIRECTEUR' || 
@@ -47,18 +52,18 @@ export class SidebarComponent implements OnInit {
         currentUser?.jobTitle?.toLowerCase().includes('directeur')
       ));
 
-    // 🔍 Filtrage unique
+
     const itemsFiltres = RAW_NAV_ITEMS.filter((item) => {
       if (!item.roles || item.roles.length === 0) return true;
       
       const rolesUpper = item.roles.map((r) => r.toUpperCase());
 
-      // Si le menu demande le rôle MANAGER
+  
       if (rolesUpper.includes('MANAGER')) {
         return isManager;
       }
 
-      // Si le rôle de l'utilisateur correspond exactement
+     
       return rolesUpper.includes(userRole);
     });
 

@@ -16,6 +16,7 @@ export interface Manager {
 export interface Organization {
   id: number;
   nom: string;
+  nom_en?: string | null;
   typeOrganizationId?: number;
   typeOrganization?: TypeOrganization;
   idOrganizationSup?: number;

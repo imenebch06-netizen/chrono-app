@@ -1,0 +1,27 @@
+// Dans theme-variables/_dark-theme-variables.scss
+html.dark-theme,
+body.dark-theme {
+  color-scheme: dark;
+
+  --mat-sys-background: #1a1d29;
+  --mat-sys-surface-bright: #2a2e3e;
+  --mat-sys-surface: #1f2230;
+  --mat-sys-surface-container: #232637;
+  --mat-sys-surface-container-low: #a2acc2;
+  --mat-sys-surface-container-lowest: #15171f;
+  --mat-sys-on-background: #e6e9f2;
+  --mat-sys-outline: #3a3f54;
+  --mat-sys-outline-variant: #3a3f54;
+
+  --mat-form-field-outlined-hover-outline-color: #3a3f54;
+  --mat-checkbox-unselected-hover-state-layer-color: #4a5068;
+  --mat-menu-item-hover-state-layer-color: #2a2e40;
+  --mat-button-toggle-state-layer-color: #2a2e40;
+  --mat-option-focus-state-layer-color: #2a2e40;
+  --mat-option-hover-state-layer-color: #2a2e40;
+  --mat-slide-toggle-unselected-track-color: #2a2e40;
+  --mat-stepper-header-focus-state-layer-color: #2a2e40;
+  --mat-stepper-header-hover-state-layer-color: #2a2e40;
+  --mat-dialog-supporting-text-color: var(--mat-sys-on-background);
+  --mat-expansion-header-hover-state-layer-color: #2a2e40;
+}
