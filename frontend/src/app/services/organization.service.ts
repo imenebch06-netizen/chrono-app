@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from 'src/environments/environment';
 export interface TypeOrganization {
   id: number;
   code: string;
@@ -35,7 +36,7 @@ export interface Organization {
   providedIn: 'root'
 })
 export class OrganizationService {
-  private apiUrl = 'http://localhost:3000/api/organizations';
+  private apiUrl = `${environment.apiUrl}/organizations`;
 
   constructor(private http: HttpClient) {}
   // 🟢 Nouvel endpoint pour récupérer l'arbre complet depuis NestJS

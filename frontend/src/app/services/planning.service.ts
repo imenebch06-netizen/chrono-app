@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from 'src/environments/environment';
 
 export interface PlanningItem {
   id?: number;
@@ -24,7 +25,7 @@ export interface CreatePlanningDto {
   providedIn: 'root',
 })
 export class PlanningService {
-  private apiUrl = 'http://localhost:3000/api/planning'; 
+  private apiUrl = `${environment.apiUrl}/planning`;
   constructor(private http: HttpClient) {}
   
   getGlobalPlanning(startDate?: string, endDate?: string): Observable<PlanningItem[]> {

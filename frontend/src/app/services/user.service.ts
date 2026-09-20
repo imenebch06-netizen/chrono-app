@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from 'src/environments/environment';
 export enum Role {
   ADMIN = 'ADMIN',
   EMPLOYE = 'EMPLOYE'
@@ -37,7 +38,7 @@ export class UserService {
   private http = inject(HttpClient);
 
   
-  private apiUrl = 'http://localhost:3000/api/employe/dashboard';
+  private apiUrl = `${environment.apiUrl}/employe/dashboard`;
 
   
   getUsers(): Observable<Employe[]> {

@@ -4,6 +4,7 @@ import { BehaviorSubject, map, Observable, tap } from 'rxjs';
 import { Router } from '@angular/router';
 import { Employe } from './user.service';
 import emailjs from '@emailjs/browser';
+import { environment } from 'src/environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -14,8 +15,8 @@ export class AuthService {
   private router = inject(Router);
 
 
-  private authUrl = 'http://localhost:3000/api/auth';
-  private profileUrl = 'http://localhost:3000/api/employe/dashboard/me';
+  private authUrl = `${environment.apiUrl}/auth`;
+  private profileUrl = `${environment.apiUrl}/employe/dashboard/me`;
   private tokenKey = 'access_token';
   private userKey = 'current_user';
 
