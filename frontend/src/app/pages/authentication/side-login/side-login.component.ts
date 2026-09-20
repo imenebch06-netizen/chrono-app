@@ -110,7 +110,7 @@ export class AppSideLoginComponent implements OnInit {
 
     this.isLoading = true;
     const credentials = {
-      email: this.form.value.uname!,
+      email: this.form.value.uname!.trim().toLowerCase(),
       password: this.form.value.password!,
     };
 

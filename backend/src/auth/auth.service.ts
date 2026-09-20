@@ -34,7 +34,8 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto) {
-    const employe = await this.employeService.findByEmail(loginDto.email);
+    const email = loginDto.email.trim().toLowerCase();
+    const employe = await this.employeService.findByEmail(email);
     if (!employe) {
       throw new UnauthorizedException('Email ou mot de passe incorrect');
     }
